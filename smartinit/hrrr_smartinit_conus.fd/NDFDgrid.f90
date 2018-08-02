@@ -41,7 +41,7 @@
       INTEGER :: JDISC,JPDTN,JGDTN,LPOS
       INTEGER,DIMENSION(:) :: KPDS(200),KGDS(200)
       INTEGER,DIMENSION(:) :: JIDS(200),JPDT(200),JGDT(200)
-      real zs,qv,qq,t1,e,enl,dwpt,z6,t6,gam,gamd,gami,tsfc,td
+      real zs,qv,qq,t1,e,enl,dwpt,z5,t5,gam,gamd,gami,tsfc,td
       real const,tddep,td_orig,zdif_max,tup, qvdif2m5m,qv2m
       real qc,qvc,thetavc,uc,vc,ratio,speed,speedc,frac
       real tmean,dz,theta1,theta6
@@ -197,17 +197,17 @@
 
 !      ---   get values at level 6 for lapse rate calculations
 
-          QQ = Q(I,J,6)/(1.+Q(i,j,6))
+          QQ = Q(I,J,5)/(1.+Q(i,j,5))
 
-          exn(i,j) = cpd_p*(p(i,j,6)/P1000)**rovcp_p
-!          theta6=((P1000/P(I,J,6))**CAPA)*T(I,J,6)
-!          T6 = theta6*EXN(i,j)/(CPD_P*(1.+0.6078*QQ))
-!          T6 = theta6*EXN(i,j)/CPD_P
+          exn(i,j) = cpd_p*(p(i,j,5)/P1000)**rovcp_p
+!          theta6=((P1000/P(I,J,5))**CAPA)*T(I,J,5)
+!          T5 = theta6*EXN(i,j)/(CPD_P*(1.+0.6078*QQ))
+!          T5 = theta6*EXN(i,j)/CPD_P
 
-          T6=T(I,J,6)
+          T5=T(I,J,5)
           Z1=Z(I,J,1)
-          Z6=Z(I,J,6)
-          GAM = (T1-T6)/(Z6-Z1)
+          Z5=Z(I,J,5)
+          GAM = (T1-T5)/(Z5-Z1)
 
 !============================================
           if (topo_ndfd(i,j).le.zs ) then
@@ -234,10 +234,10 @@
           tnew(i,j) = tsfc
 
 ! --- Use the 2mT if the terrain differences are <= 1
-!         zdiff = abs(zs-topo_ndfd(i,j))
-!         if(zdiff .le. 1.0)then
-!           tnew(i,j)=t2(i,j)
-!         endif
+          zdiff = abs(zs-topo_ndfd(i,j))
+          if(zdiff .le. 1.0)then
+            tnew(i,j)=t2(i,j)
+          endif
 
 !       Set dewpoint depression to that at original sfc
 
@@ -259,7 +259,7 @@
 !         Here, when topo-NDFD > topo-RAP, we allow a small
 !        subisothermal lapse rate with slight warming with height.
 
-          GAM = MIN(GAMD,MAX(GAM,GAMsubj))
+          GAM = MIN(GAMD,MAX(GAM,GAMi))
 
           DO K=1,LM
            if (z(i,j,k) .gt. topo_ndfd(i,j)) go to 781
@@ -277,7 +277,7 @@
            thetavc = thetak1+frac * (thetak-thetak1)
            qvc = Q2(i,j)+frac * (Q(i,j,k)-Q2(i,j))
            qc = qvc/(1.+qvc)
-
+           !tnew(i,j) = t2(i,j)
           else 
            frac = (topo_ndfd(i,j)-z(i,j,k-1)) / (z(i,j,k)-z(i,j,k-1))
            exn1 = (p(i,j,k-1)/P1000)**rovcp_p
@@ -289,24 +289,26 @@
            thetavc = thetak1+frac * (thetak-thetak1)
            qvc = Q(i,j,k-1)+frac * (Q(i,j,k)-Q(i,j,k-1))
            qc = qvc/(1.+qvc)
+           !alttup=t(i,j,k-1)+frac*(t(i,j,k)-t(i,j,k-1))
+           !tnew(i,j) = t2(i,j) + (alttup-t1)
           endif
 ! --- temperature
-          tup = thetavc*(pnew(i,j)/P1000)**rovcp_p / (1.+0.6078*qc)
-!          tup=thetavc
-          alttup=t2(i,j)+frac*(t(i,j,k)-t2(i,j))
+!         tup = thetavc*(pnew(i,j)/P1000)**rovcp_p / (1.+0.6078*qc)
+!         alttup=t2(i,j)+frac*(t(i,j,k)-t2(i,j))
 
 ! original temperature computation
 !         alttup=tup
             
 !  provisional 2m temp at NDFD topo
-          tnew(i,j) = t2(i,j) + (alttup-t1)
+!         tnew(i,j) = t2(i,j) + (alttup-t1)
 
-!         zdiff = abs(topo_ndfd(i,j)-zs)
-!         if(zdiff .le. 1.0)then
 ! --- Use the 2mT if the terrain differences are <= 1
-!           tnew(i,j)=t2(i,j)
-!         else
+          zdiff = abs(zs-topo_ndfd(i,j))
+          if(zdiff .le. 1.0)then
+            tnew(i,j)=t2(i,j)
+          endif
 ! --- Smoothly adjust the downscaled temperature
+!         if (zdiff .gt. 1) then
 !           tnew(i,j) = t2(i,j) + ((alttup-t1)*(tanh(zdiff-2*pi)+1)/2)
 !         endif
 
@@ -317,8 +319,9 @@
 
           tsfc=t2(i,j) + (zs-topo_ndfd(i,j))*gam
 
+          tnew(i,j)=tsfc
           if (tnew(i,j) .gt. t2(i,j)) then
-           tnew(i,j) = min(tnew(i,j),tsfc)
+           tnew(i,j) = t2(i,j)
           endif
 
            qv=q2(i,j)

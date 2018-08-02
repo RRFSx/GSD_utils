@@ -107,6 +107,7 @@ static struct gribtable_s *search_gribtable(struct gribtable_s *p, unsigned char
 
     discipline = GB2_Discipline(sec);
     center = GB2_Center(sec);
+    if ( center == 59 ) center = 7 ;
     mastertab = GB2_MasterTable(sec);
     localtab = GB2_LocalTable(sec);
     parmcat = GB2_ParmCat(sec);

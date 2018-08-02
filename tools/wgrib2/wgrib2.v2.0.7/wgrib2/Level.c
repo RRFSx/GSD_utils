@@ -232,6 +232,7 @@ int f_lev(ARG0) {
     if (mode < 0) return 0;
 
     center = GB2_Center(sec);
+    if ( center == 59 ) center = 7;
     subcenter = GB2_Subcenter(sec);
 
     fixed_surfaces(sec, &level_type1, &val1, &undef_val1, &level_type2, &val2, &undef_val2);
