@@ -1,0 +1,16 @@
+
+&setup
+   obsdate=2017010103,
+   obsmin=0,
+   obsPath='../',
+   obsfilename='prepbufr',
+   savePath='/scratch3/BMC/wrfruc/mhu/rapcode/git_local/work/tool/tool/run/save',
+   prefixsavename='prepbufr',
+   fcstPath='../',
+   fcstfilename='wrf_inout',
+/
+&obsset
+   numobstype=4,
+   obstype=187,120,133,227,
+   timewindow=0.25,1.25,0.5,0.5,
+/
