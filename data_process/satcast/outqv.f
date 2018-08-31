@@ -1,0 +1,63 @@
+
+!   SUBPROGRAM DOCUMENTATION BLOCK
+! SUBPROGRAM:    OUTQV       PRINT MAX VALUE OF ARRAY
+!   PRGMMR:  BENJAMIN, STAN ORG: ERL/PROFS      DATE: 93-01-18
+!
+! ABSTRACT:  PRINT MAX VALUE AND I,J,K OF 3-D ARRAY
+!
+! PROGRAM HISTORY LOG:
+!    88/05/31       S. BENJAMIN     ORIGINAL VERSION
+!
+! USAGE:   CALL OUTQV(QVA,MIX,MJX,MKX)
+!
+!   INPUT ARGUMENT LIST:
+!     QVA      - REAL     3-D ARRAY
+!     MIX      - INTEGER  NO. OF POINTS IN X DIRECTION
+!     MJX      - INTEGER  NO. OF POINTS IN Y DIRECTION
+!     MKX      - INTEGER  NO. OF POINTS IN Z DIRECTION
+!
+!   OUTPUT ARGUMENT LIST:
+!
+! REMARKS: NONE
+!
+! ATTRIBUTES:
+!   LANGUAGE: FORTRAN-77 + EXTENSIONS
+!   MACHINE: DEC - VAX, VMS
+!
+!
+
+      SUBROUTINE OUTQV(QVA,MIX,MJX,MKX)
+
+!        INCLUDE 'IMPLICIT'
+        INTEGER MIX,MJX,MKX,I,J,K
+
+       REAL QVA(MIX,MJX,MKX),QVAMAX,qvamin
+        INTEGER IMAX,JMAX,imin,jmin
+
+       DO 200 K=1,MKX
+      IMAX=0
+      JMAX=0
+      QVAMAX=-1.E30
+      QVAMin= 1.E30
+       DO 100 J=1,MJX
+       DO 100 I=1,MIX
+         IF(QVA(I,J,K).GT.QVAMAX)THEN
+           QVAMAX=QVA(I,J,K)
+           IMAX=I
+           JMAX=J
+         ENDIF
+         IF(QVA(I,J,K).lT.QVAMin)THEN
+           QVAMin=QVA(I,J,K)
+           IMin=I
+           JMin=J
+         ENDIF
+ 100   CONTINUE
+       write (6,120)K,IMAX,JMAX,QVAMAX, &
+           imin,jmin,qvamin
+ 120   format ('K=',i3,' I/J/MAXval=',2i4,E13.5, &
+                      ' I/J/MINval=',2i4,E13.5)
+!      PRINT *,'K,I/J,MAX,I/J,MIN = ',K,IMAX,JMAX,QVAMAX,
+!    1      imin,jmin,qvamin
+ 200   CONTINUE
+       RETURN
+        END

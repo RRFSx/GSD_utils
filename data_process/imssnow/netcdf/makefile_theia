@@ -1,0 +1,34 @@
+# makefile for nssl_porcess
+#! /bin/sh -v
+
+# Define the fortran compiler and options
+
+WRFDIR=/scratch3/BMC/wrfruc/mhu/code/WRF/WRFV3.7.1
+#UPPLIBDIR=/scratch3/BMC/wrfruc/mhu/rapcode/upp/unipost/comupp/lib
+UPPLIBDIR=/scratch3/BMC/wrfruc/alexander/code/rap/devel1/RR-svn/trunk/unipost/libs
+NETCDF=/apps/netcdf/3.6.3-intel
+
+FC   =  mpif90 -free -f90=ifort
+FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
+
+INCLD=  -I${NETCDF}/include -I../../../include
+LIBS =  -L${WRFDIR}/external/io_netcdf -lwrfio_nf -L${NETCDF}/lib -lnetcdf \
+        -L${UPPLIBDIR}  -lbacio -lip -lsp -lw3nco -lw3emc
+
+OBJS = process_NESDIS_imssnow.o netCDFsub_geo.o update_SNOWICE_netcdf_mass.o
+
+all: process_NESDIS_imssnow
+
+process_NESDIS_imssnow: ${OBJS}
+	${FC} -o process_NESDIS_imssnow.exe ${FLAGS} ${OBJS} ${LIBS} 
+
+.SUFFIXES : .F90 .f90 .o
+
+.F90.o :
+	${FC} ${FLAGS} ${INCLD} -c $<
+
+.f90.o :
+	${FC} ${FLAGS} ${INCLD} -c $<
+
+clean:
+	/bin/rm -f *.o *.exe

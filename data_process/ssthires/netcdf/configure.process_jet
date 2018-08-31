@@ -1,0 +1,10 @@
+
+WRFDIR=/pan2/projects/nrtrr/alexander/code/rap/primary/RR-svn/trunk/WRFV3.6
+UPPLIBDIR=/pan2/projects/nrtrr/alexander/code/rap/primary/RR-svn/trunk/unipost/libs
+
+FC   =  mpif90 -free
+CC  = cc
+FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
+CPPFLAGS =  -D_UNDERSCORE -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+GSILIBS =${UPPLIBDIR} -lw3 -lbacio_4 
+

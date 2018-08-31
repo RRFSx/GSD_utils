@@ -1,0 +1,11 @@
+
+WRFDIR=/scratch3/BMC/wrfruc/mhu/rapcode/git_local/rapid-refresh_Nov2016/WRFV3.8_GSD_hybridcoord
+UPPLIBDIR=/scratch3/BMC/wrfruc/alexander/code/rap/devel1/RR-svn/trunk/unipost/libs
+SFC            =  ifort
+FC   =  mpiifort -free -f90=$(SFC)
+# FC   =  mpi90 -free -f90=$(SFC)
+CC  = cc
+FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
+CPPFLAGS =  -D_UNDERSCORE -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+GSILIBS =../../../lib -lw3emc_i4r8 -lw3nco_i4r8 -lbacio -lbufr_i4r8
+
