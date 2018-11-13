@@ -277,7 +277,7 @@ if(mype==0) then
      rmse_var='LAKEDEPTH2D'
      call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
 !  ------ update SAVETKE12D
-     rmse_var='SAVETKE12D'
+     rmse_var='SAVEDTKE12D'
      call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
 !  ------ update SNOWDP2D
      rmse_var='SNOWDP2D'

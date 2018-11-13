@@ -370,7 +370,7 @@ subroutine update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
 end subroutine update_netcdf_mass
 
 SUBROUTINE wrf_debug( level , str )
-  USE module_wrf_error
+!  USE module_wrf_error
   IMPLICIT NONE
   CHARACTER*(*) str
   INTEGER , INTENT (IN) :: level

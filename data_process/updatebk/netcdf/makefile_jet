@@ -3,13 +3,14 @@
 
 # Define the fortran compiler and options
 
+GSIBUILD=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi
 WRFDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WRFV3.8_GSD_hybridcoord
 SFC            =  ifort
 FC   =  mpif90 -free -f90=$(SFC)
 FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
 
-INCLD=  -I${NETCDF}/include -I../../../include
-LIBS =  ${WRFDIR}/external/io_netcdf/libwrfio_nf.a -L${NETCDF}/lib -lnetcdf -L../../../lib -lw3emc_i4r8 -lw3nco_i4r8
+INCLD=  -I${NETCDF}/include -I${GSIBUILD}/include
+LIBS =  ${WRFDIR}/external/io_netcdf/libwrfio_nf.a -L${NETCDF}/lib -lnetcdf -lnetcdff -L${GSIBUILD}/lib -lw3emc_v2.2.0 -lw3nco_v2.0.6
 
 OBJS = update_netcdf_mass.o update_netcdf_mass_snowT.o
 
