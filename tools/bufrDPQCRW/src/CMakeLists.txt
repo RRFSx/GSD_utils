@@ -1,0 +1,13 @@
+ 
+MESSAGE(STATUS "NETCDF dirctory: $ENV{NETCDF}/include")
+INCLUDE_DIRECTORIES("$ENV{NETCDF}/include")
+INCLUDE_DIRECTORIES("${BASELIBPATH}/src")
+
+set(SRC_ENCODERW EncodeRW_DPQC.f90 module_RW_DPQC.f90)
+set_source_files_properties(${SRC_ENCODERW} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
+
+ADD_EXECUTABLE (encoderw.exe ${SRC_ENCODERW})
+TARGET_LINK_LIBRARIES(encoderw.exe ${BASELIBPATH}/lib/libbase.a ${BASELIBPATH}/lib/libncio.a)
+#set_target_properties(testlib.exe PROPERTIES LINK_FLAGS "-O3")
+TARGET_LINK_LIBRARIES(encoderw.exe ${NETCDF_LIB} ${BUFRPATH})
+
