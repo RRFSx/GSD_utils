@@ -23,6 +23,8 @@ module module_RW_DPQC
      real    :: Latitude,Longitude,Height
      integer :: Time
      integer :: iyy,imm,idd,ihh,imin,iss
+     integer :: ivdd,ivhh,ivmin
+     character(len=4)  :: radarvName
      real    :: rvcp_value
      real    :: rUnambiguous_Range
      real    :: GateWidth
@@ -30,6 +32,9 @@ module module_RW_DPQC
      real, allocatable :: rwAzimuth(:)
      real, allocatable :: NyquistV(:)
      real, allocatable :: rw2d(:,:)
+     real, allocatable :: rw1d(:)
+
+     integer :: pixel
   contains
      procedure ::  readnc  => read_rw_dpqc
      procedure ::  wrtbufr => write_rw2bufr
@@ -233,25 +238,24 @@ module module_RW_DPQC
                    this%idd*100 + this%ihh
 
         hdr3(1)=this%scanid()
-        hdr3(2)=this%NyquistV(1)
         hdr3(3)=this%rvcp_value
-        hdr3(4)=this%idd*10000+this%ihh*100+this%imin
+        hdr3(4)=this%ivdd*10000+this%ivhh*100+this%ivmin
 !
 ! set the report subtype based on the report hour - see the bufrtab.006  
 ! for the hour windows
 ! 
         subset2(1:6) = 'NC0060'
         WRITE (UNIT=subset2(7:8),FMT='(I2)') this%ihh + 10
-!  wrtrw:do iaz=1, this%Azimuth
-  wrtrw:do iaz=1, 5
+  wrtrw:do iaz=1, this%Azimuth
+!  wrtrw:do iaz=1, 5
           obs=10.0e+10
           hdr(7)=this%rwAzimuth(iaz)
+          hdr3(2)=this%NyquistV(iaz)
           numrwbin=0
           do i=1,this%Gate
              if(this%rw2d(i,iaz) >= 0.0 .and. this%rw2d(i,iaz) < 200.0) then
                numrwbin=numrwbin+1
                obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
-               write(*,*) this%RangeToFirstGate,this%GateWidth,i,obs(1,numrwbin)
                obs(2,numrwbin)=this%rw2d(i,iaz)
 !              obs(3,i)=2.5
              endif
@@ -288,9 +292,15 @@ module module_RW_DPQC
         integer, allocatable :: ifld1d(:)
         integer :: minutes
 
+        real, allocatable :: rw1d(:)
+        integer(2), allocatable :: pixel_x(:)
+        integer(2), allocatable :: pixel_y(:)
+        integer, allocatable :: pixel_count(:)
+        integer :: i
+
         this%crwfile=trim(crwfile)
 
-        call ncrwin%open(trim(crwfile),"r",200)
+        call ncrwin%open(trim(crwfile),"r",0)
         call ncrwin%get_dim("Azimuth",this%Azimuth)
         call ncrwin%get_dim("Gate",this%Gate)
         write(*,*) 'Azimuth,Gate    =',this%Azimuth,this%Gate
@@ -320,12 +330,35 @@ module module_RW_DPQC
         call mt%mins2date(minutes,this%iyy,this%imm,this%idd,this%ihh,this%imin)
         write(*,'(a,I6,5I3)') 'yy,mm,dd,hh,min,ss=', &
             this%iyy,this%imm,this%idd,this%ihh,this%imin,this%iss
-
+!
         allocate(ifld1d(this%Azimuth))
 
         allocate(this%rwAzimuth(this%Azimuth))
         allocate(this%NyquistV(this%Azimuth))
         allocate(this%rw2d(this%Gate,this%Azimuth))
+
+        if(int(this%rvcp_value) == 35 ) then
+           call ncrwin%get_dim("pixel",this%pixel)
+           write(*,*) 'pixel=',this%pixel
+           allocate(pixel_x(this%pixel))
+           allocate(pixel_y(this%pixel))
+           allocate(pixel_count(this%pixel))
+           call ncrwin%get_var("pixel_x",this%pixel,pixel_x)
+           call ncrwin%get_var("pixel_y",this%pixel,pixel_y)
+           call ncrwin%get_var("pixel_count",this%pixel,pixel_count)
+           allocate(rw1d(this%pixel))
+           call ncrwin%get_var("AliasedVelocityDPQC",this%pixel,rw1d)
+           this%rw2d=-999.0
+           do i=1,this%pixel
+              this%rw2d(pixel_y(i),pixel_x(i))=rw1d(i)
+           enddo
+           deallocate(pixel_x)
+           deallocate(pixel_y)
+           deallocate(pixel_count)
+           deallocate(rw1d)
+        else
+           call ncrwin%get_var("AliasedVelocityDPQC",this%Gate,this%Azimuth,this%rw2d)
+        endif
 !
         call ncrwin%get_var("BeamWidth",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("AzimuthalSpacing",this%Azimuth,this%rwAzimuth)
@@ -335,9 +368,17 @@ module module_RW_DPQC
 
         call ncrwin%get_var("Azimuth",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("NyquistVelocity",this%Azimuth,this%NyquistV)
-        call ncrwin%get_var("AliasedVelocityDPQC",this%Gate,this%Azimuth,this%rw2d)
         call ncrwin%close()
  
+        if(this%scanid()==1 .or. this%radarvName /= this%radarName) then
+           this%ivdd=this%idd 
+           this%ivhh=this%ihh 
+           this%ivmin=this%imin 
+           this%radarvName=this%radarName
+           write(*,*) 'start a new volume:',this%idd,this%ihh,this%imin,&
+                                            this%radarName
+        endif
+
         deallocate(ifld1d)
 
      end subroutine read_rw_dpqc

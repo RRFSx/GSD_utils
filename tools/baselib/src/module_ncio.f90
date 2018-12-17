@@ -44,10 +44,14 @@ module module_ncio
                               get_var_nc_double_3d,                       &
                               get_var_nc_real_1d,get_var_nc_real_2d,      &
                               get_var_nc_real_3d,                         &
+                              get_var_nc_short_1d,get_var_nc_short_2d,    &
                               get_var_nc_int_1d,get_var_nc_int_2d,        &
                               get_var_nc_int_3d,                          &
                               get_var_nc_char_1d,get_var_nc_char_2d,      &
                               get_var_nc_char_3d
+      procedure :: get_var_nc_short
+      procedure :: get_var_nc_short_1d
+      procedure :: get_var_nc_short_2d
       procedure :: get_var_nc_int
       procedure :: get_var_nc_int_1d
       procedure :: get_var_nc_int_2d
@@ -1862,6 +1866,187 @@ subroutine get_var_nc_int(this,varname,ilength,field)
   endif
 !
 end subroutine get_var_nc_int
+!
+subroutine get_var_nc_short_1d(this,varname,nd1,field)
+!
+! read in one field 
+!
+  use netcdf
+!
+  implicit none
+!
+  class(ncio) :: this
+  character(len=*),intent(in) :: varname  ! name of the field to read
+  integer, intent(in) :: nd1              !  size of array dval
+  integer(2), intent(out) :: field(nd1)     !  values of the field read in
+  integer :: ilength
+!
+  character*40,parameter :: thissubname='get_var_nc_short_1d'
+!
+  integer :: i
+!
+!
+  ilength=nd1
+  call this%get_var_nc_short(varname,ilength,field)
+!
+  if(nd1==this%ends(1)) then
+     if(this%debug_level>100) then
+        write(*,*) trim(thissubname),' show samples:'
+        write(*,*) (field(i),i=1,min(nd1,10))
+     endif
+  else
+     write(*,*) trim(thissubname),' ERROR: dimension does not match.'
+  endif
+!
+end subroutine get_var_nc_short_1d
+!
+subroutine get_var_nc_short_2d(this,varname,nd1,nd2,field)
+!
+! read in one field 
+!
+  use netcdf
+!
+  implicit none
+!
+  class(ncio) :: this
+  character(len=*),intent(in) :: varname  ! name of the field to read
+  integer, intent(in) :: nd1,nd2          !  size of array dval
+  integer(2), intent(out) :: field(nd1,nd2) !  values of the field read in
+  integer :: ilength
+!
+  integer(2),allocatable :: temp(:)
+!
+  character*40,parameter :: thissubname='get_var_nc_short_2d'
+!
+  integer :: i,j,k
+  integer :: istart,iend
+!
+!
+  ilength=nd1*nd2
+  allocate(temp(ilength))
+
+  call this%get_var_nc_short(varname,ilength,temp)
+
+  if(nd1==this%ends(1) .and. nd2==this%ends(2)) then
+     do j=1,nd2
+        istart=(j-1)*nd1+1
+        iend=(j-1)*nd1+nd1
+        field(:,j)=temp(istart:iend)
+     enddo
+!
+     if(this%debug_level>100) then
+        write(*,*) trim(thissubname),' show samples:'
+        write(*,*) 'max,min:',maxval(field(:,:)),minval(field(:,:))
+     endif
+  else
+     write(*,*) trim(thissubname),' ERROR: dimension does not match.'
+     write(*,*) nd1,this%ends(1),nd2,this%ends(2)
+  endif
+  deallocate(temp)
+!
+end subroutine get_var_nc_short_2d
+!
+subroutine get_var_nc_short(this,varname,ilength,field)
+!
+! read in one field 
+!
+  use netcdf
+!
+  implicit none
+!
+  class(ncio) :: this
+  character(len=*),intent(in) :: varname  ! name of the field to read
+  integer, intent(in) :: ilength          !  size of array dval
+  integer(2), intent(out) :: field(ilength)   !  values of the field read in
+!
+  integer :: ncid
+! 
+  integer :: status
+  integer :: varid
+  integer :: ends(4),start(4)
+
+  integer :: length4d,length3d,length2d
+  integer :: nDims,ndim
+  integer :: dimids(4)
+  integer :: xtype
+  character*40 :: dimname
+
+  character*40,parameter :: thissubname='get_var_nc_short'
+!
+  integer :: i,k
+!
+!
+  ncid=this%ncid
+  
+! get variable IDs
+  status = nf90_inq_varid(ncid, trim(varname), VarId)
+  if(status /= nf90_NoErr) call this%handle_err(status)
+
+!  get dimensions
+  ends=1
+  start=1
+  this%ends=1
+
+  this%dimname="                           "
+! get variable type
+  status = nf90_inquire_variable(ncid, VarId, xtype = xtype)
+  if(status /= nf90_NoErr) call this%handle_err(status)
+  if(xtype==NF90_SHORT) then
+     this%xtype=xtype
+  else
+     write(*,*) trim(thissubname),' ERROR: wrong data type, expect ',NF90_SHORT,' but read in ',xtype
+     stop 123
+  endif
+  
+! get dimension size
+  status = nf90_inquire_variable(ncid, VarId, ndims = nDims)
+  if(status /= nf90_NoErr) call this%handle_err(status)
+  this%ndims=nDims
+!
+  status = nf90_inquire_variable(ncid, VarId, dimids = dimids(1:nDims))
+  if(status /= nf90_NoErr) call this%handle_err(status)
+  do i=1,nDims
+    dimname="       "
+    status = nf90_inquire_dimension(ncid, dimids(i), dimname, len = ndim)
+    if (status /= nf90_noerr) call this%handle_err(status)
+    ends(i)=ndim
+    this%ends(i)=ends(i)
+    this%dimname(i)=trim(dimname)
+    if(this%ends(i) < 1) then
+       write(*,*) trim(thissubname),' Error, ends dimension should larger than 0 :', ends(i)
+       stop 1234
+    endif
+  enddo
+  length2d=ends(1)*ends(2)
+  length3d=length2d*ends(3)
+  length4d=length3d*ends(4)
+  if(ilength .ne. length4d) then
+     write(*,*) trim(thissubname),'ERROR: ',ilength,' should equal to ',length4d
+     stop 123
+  endif
+!
+  if(nDims <=4 ) then
+     status = nf90_get_var(ncid, VarId, field, &
+                         start = start(1:4) , &
+                         count = ends(1:4))
+     if(status /= nf90_NoErr) call this%handle_err(status)
+  else
+     write(*,*) trim(thissubname),'Error: too many dimensions:',nDims
+     stop 1234
+  endif
+!
+  if(this%debug_level>0) then
+     write(*,'(a,a)') '>>>read in variable: ',trim(varname)
+  endif
+  if(this%debug_level>10) then
+     write(*,'(8x,a,I10)') 'data type : ',this%xtype
+     write(*,'(8x,a,I10)') 'dimension size: ',this%nDims
+     do i=1,this%nDims
+       write(*,'(8x,a,I5,I10,2x,a)') 'rank, ends, name=',i,this%ends(i),trim(this%dimname(i))
+     enddo
+  endif
+!
+end subroutine get_var_nc_short
 
 subroutine get_var_nc_char_1d(this,varname,nd1,field)
 !
