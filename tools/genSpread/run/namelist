@@ -1,0 +1,4 @@
+&setup
+ filelistname='/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/genSpread/run/filelist',
+ resultspath='/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/results',
+/

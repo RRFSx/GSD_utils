@@ -1,6 +1,6 @@
 set(ENV{CC} "icc")
 set(ENV{CXX} "icpc")
-set(ENV{FC} "ifort")
+set(ENV{FC} "mpif90 -f90=ifort")
 
 cmake_minimum_required (VERSION 2.8)
 
