@@ -51,6 +51,7 @@ module module_cal_spread
          open(iunit,file=trim(filein),form='unformatted',convert='BIG_ENDIAN')
             read(iunit) this%nx,this%ny,this%nz
             if(allocated(this%sprd)) deallocate(this%sprd)
+            if(trim(varname)=='ps') this%nz=1
             allocate(this%sprd(this%nx,this%ny,this%nz))
             this%sprd=0.0_r_kind
          close(iunit)
@@ -84,9 +85,9 @@ module module_cal_spread
          open(iunit,file=trim(filein),form='unformatted',convert='BIG_ENDIAN')
             read(iunit) nx,ny,nz
 ! read and add  ENSEMBLE perturbations 
+            if(trim(this%varname)=='ps') nz=1
             if(nx==this%nx .and. ny==this%ny .and. nz==this%nz) then
                if(trim(this%varname)=='ps') then
-                  nz=1
                   allocate(fld3d(ny,nx,nz))
                   read(iunit) fld3d      ! ps
                elseif(trim(this%varname)=='tv') then

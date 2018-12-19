@@ -1,0 +1,11 @@
+&setup
+  basefile='/mnt/lfs1/projects/rtwbl/mhu/test/gsi/hrrre/data/wrfout_d02_2018-07-17_09_00_00',
+  pathfull='/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/results_12m',
+  pathcut='/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/results_12m',
+  nx_s=1,
+  nx_e=1580,
+  ny_s=1,
+  ny_e=1000,
+  nz_s=1,
+  nz_e=2,
+/

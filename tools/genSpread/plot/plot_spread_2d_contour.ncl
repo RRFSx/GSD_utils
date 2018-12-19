@@ -8,8 +8,14 @@ begin
 ; open file and read in data
 ;=================================================;
 
-;  filedata="/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/results/spread_vX0001-1580Y0001-1000Z0001-0002.bin"
-  filedata="/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/results/spread_vX0001-0790Y0500-1000Z0001-0002.bin"
+  path="/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/"
+  testid="08m" 
+  variableid="spread_u"
+  domain="X0300-0450Y0250-0450Z0001-0002"
+  domain="X0001-1580Y0001-1000Z0001-0002"
+  filedata=path+"/results_"+testid+"/"+variableid+domain+".bin"
+
+  resultsfile=variableid+"."+testid+"."+domain
 
   dim = fbinrecread(filedata, 0, (/3/), "integer")
   nx=dim(0)
@@ -26,7 +32,7 @@ begin
 
   field = fbinrecread(filedata, 4, (/ nz,ny,nx /), "float")
 
-  wks = gsn_open_wks("pdf","spread_tv_2d")
+  wks = gsn_open_wks("pdf",resultsfile)
   gsn_define_colormap(wks,"testcmap")
 
   resources                      = True
@@ -86,7 +92,7 @@ begin
 
   presources@tfDoNDCOverlay  = True
   presources@cnMonoLineColor    = False
-  presources@gsnContourLineThicknessesScale    = 2.0
+  presources@gsnContourLineThicknessesScale    = 1.0
   presources@cnFillOn    = False
   presources@gsnContourNegLineDashPattern = 1         ; negtive line use dash
   presources@lbPerimOn             = False    ; Turn off perimeter on label bar.
@@ -94,7 +100,9 @@ begin
   presources@cnLineLabelDensityF   = 0.5
   presources@cnLineLabelFontHeightF= 0.01
 
-  presources@cnLevelSpacingF = 1.0
+  presources@cnLevelSelectionMode  = "ExplicitLevels"
+  presources@cnLevels              = (/1.5,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,5.0/)
+;  presources@cnLevelSpacingF = 0.2
   plot = gsn_contour(wks, field(0,:,:), presources)
   overlay(map,plot)
 

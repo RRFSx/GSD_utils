@@ -30,7 +30,7 @@ program calculate_spread
    call MPI_Comm_rank (MPI_COMM_WORLD, worldid, ierr)    
    id=worldid+1
    if(id==1) write(*,*) 'id=',worldid, ' msize=',worldsize
-   open(12,file='namelist')
+   open(12,file='namelist.sprd')
       read(12,setup)
    close(12)
    if(id==1) write(*,setup)
