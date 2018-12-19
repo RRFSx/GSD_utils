@@ -72,11 +72,13 @@ program cut_spread
    varnamelist(4)='v'
    varnamelist(5)='rh'
 !
+   write(spreadfile_cut,'(a,a,6(a1,I4.4),a)') trim(pathcut),'/spread_','X',&
+                  nx_s,'-',nx_e,'Y',ny_s,'-',ny_e,'Z',nz_s,'-',nz_e,'.bin'
+   open(iunit_out,file=trim(spreadfile_cut),form='unformatted')
+!
    do iv=1,numvar
       varname=trim(varnamelist(iv)) 
       write(spreadfile,'(a,a,a,a)') trim(pathfull),'/spread_',trim(varname),'.bin'
-      write(spreadfile_cut,'(a,a,a,6(a1,I4.4),a)') trim(pathcut),'/spread_',trim(varname),'X',&
-                     nx_s,'-',nx_e,'Y',ny_s,'-',ny_e,'Z',nz_s,'-',nz_e,'.bin'
       write(*,*) 'read in ',trim(spreadfile)
       open(iunit,file=trim(spreadfile),form='unformatted',convert='BIG_ENDIAN')
          read(iunit) nx,ny,nz
@@ -96,20 +98,21 @@ program cut_spread
 !
          read(iunit) sprd
 !
-         open(iunit_out,file=trim(spreadfile_cut),form='unformatted')
+         if(iv==1) then
             write(iunit_out) nx_e-nx_s+1,ny_e-ny_s+1,nz_e-nz_s+1
             write(iunit_out) rlat(nx_s:nx_e,ny_s:ny_e)
             write(iunit_out) rlon(nx_s:nx_e,ny_s:ny_e)
             write(iunit_out) rhgt(nx_s:nx_e,ny_s:ny_e)
-            if(trim(varname)=='ps') then
-               write(iunit_out) real(sprd(nx_s:nx_e,ny_s:ny_e,1))
-            else
-               write(iunit_out) real(sprd(nx_s:nx_e,ny_s:ny_e,nz_s:nz_e))
-            endif
-         close(iunit_out)
+         endif
+         if(trim(varname)=='ps') then
+            write(iunit_out) real(sprd(nx_s:nx_e,ny_s:ny_e,1))
+         else
+            write(iunit_out) real(sprd(nx_s:nx_e,ny_s:ny_e,nz_s:nz_e))
+         endif
          deallocate(sprd)
       close(iunit)
    enddo ! iv
+   close(iunit_out)
 
    deallocate(varnamelist)
    deallocate(rlat)

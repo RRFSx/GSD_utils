@@ -9,13 +9,13 @@ begin
 ;=================================================;
 
   path="/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/"
-  testid="08m" 
-  variableid="spread_u"
-  domain="X0300-0450Y0250-0450Z0001-0002"
+  testid="21z_m08m09" 
+  variableid=(/"ps","tv","u","v","rh"/)
   domain="X0001-1580Y0001-1000Z0001-0002"
-  filedata=path+"/results_"+testid+"/"+variableid+domain+".bin"
+  domain="X0001-0800Y0001-0500Z0001-0002"
+  filedata=path+"/plot_"+testid+"/spread_"+domain+".bin"
 
-  resultsfile=variableid+"."+testid+"."+domain
+  resultsfile="Cspread."+testid+"."+domain
 
   dim = fbinrecread(filedata, 0, (/3/), "integer")
   nx=dim(0)
@@ -30,7 +30,16 @@ begin
   rlon = fbinrecread(filedata, 2, (/ ny,nx /), "float")
   terrain = fbinrecread(filedata, 3, (/ ny,nx /), "float")
 
-  field = fbinrecread(filedata, 4, (/ nz,ny,nx /), "float")
+  fieldps = fbinrecread(filedata, 4, (/ 1,ny,nx /), "float")
+  fieldtv = fbinrecread(filedata, 5, (/ nz,ny,nx /), "float")
+  fieldu  = fbinrecread(filedata, 6, (/ nz,ny,nx /), "float")
+  fieldv  = fbinrecread(filedata, 7, (/ nz,ny,nx /), "float")
+  fieldrh = fbinrecread(filedata, 8, (/ nz,ny,nx /), "float")
+  print(max(fieldps(0,:,:)))
+  print(max(fieldtv(0,:,:)))
+  print(max(fieldu(0,:,:)))
+  print(max(fieldv(0,:,:)))
+  print(max(fieldrh(0,:,:)))
 
   wks = gsn_open_wks("pdf",resultsfile)
   gsn_define_colormap(wks,"testcmap")
@@ -77,37 +86,64 @@ begin
   resources@lbOrientation         = "Vertical"
 
   resources@tfDoNDCOverlay        = True        ; REQUIRED for plotting on native grid
-  resources@tiMainString    = " terrian"
   resources@tiMainFontHeightF=0.02
   resources@tmXBLabelFontHeightF=0.01
   resources@tmYLLabelFontHeightF=0.01
-  map = gsn_csm_contour_map(wks,terrain,resources)
 
   presources                  =  True              ; plot mods desired
   presources@gsnDraw              = False              ; Do not draw plot
-  presources@gsnFrame             = False              ; Do not advance frame
+  presources@gsnFrame             = True              ; Do not advance frame
 
   presources@sfXArray         = rlon
   presources@sfYArray         = rlat
 
+  ccmap      = read_colormap_file("BlAqGrYeOrRe")
+  presources@cnFillOn              = False            ; color plot desired
+  presources@cnFillPalette         = ccmap
+
   presources@tfDoNDCOverlay  = True
   presources@cnMonoLineColor    = False
   presources@gsnContourLineThicknessesScale    = 1.0
-  presources@cnFillOn    = False
   presources@gsnContourNegLineDashPattern = 1         ; negtive line use dash
   presources@lbPerimOn             = False    ; Turn off perimeter on label bar.
   presources@lbOrientation         = "Vertical"
   presources@cnLineLabelDensityF   = 0.5
   presources@cnLineLabelFontHeightF= 0.01
 
-  presources@cnLevelSelectionMode  = "ExplicitLevels"
-  presources@cnLevels              = (/1.5,2.0,2.25,2.5,2.75,3.0,3.25,3.5,3.75,4.0,4.25,4.5,5.0/)
-;  presources@cnLevelSpacingF = 0.2
-  plot = gsn_contour(wks, field(0,:,:), presources)
-  overlay(map,plot)
+  presources@tiMainFontHeightF=0.01
 
-  draw(map)
+  presources@cnLevelSelectionMode  = "ExplicitLevels"
+  presources@cnFillColors = (/ 0,11,21,31,38,48,58,68,78,88,98/)
+
+  do iv = 0,4
+     presources@tiMainString    = variableid(iv)+" Spread:"+domain+"+terrain"
+     map = gsn_csm_contour_map(wks,terrain,resources)
+     if ( iv .eq. 0 ) then
+        presources@cnLevels              = (/0.06,0.07,0.08,0.10,0.12,0.14,0.18,0.22,0.26,0.30/) ; ps
+        plot = gsn_contour(wks,fieldps(0,:,:),presources)
+     else if ( iv .eq. 1 ) then
+        presources@cnLevels              = (/0.6,0.8,1.0,1.2,1.4,1.8,2.0,2.2,2.4,2.8/)  ; T
+        plot = gsn_contour(wks,fieldtv(0,:,:),presources)
+     else if ( iv .eq. 2 ) then
+        presources@cnLevels             = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
+        plot = gsn_contour(wks,fieldu(0,:,:),presources)
+     else if ( iv .eq. 3 ) then
+        presources@cnLevels              = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
+        plot = gsn_contour(wks,fieldv(0,:,:),presources)
+     else if ( iv .eq. 4 ) then
+        presources@cnLevels              = (/0.02,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20/) ; rh
+        plot = gsn_contour(wks,fieldrh(0,:,:),presources)
+     end if
+     end if
+     end if
+     end if
+     end if
+
+     overlay(map,plot)
+     draw(map)
+  end do 
 
   delete(plot)
+  delete(map)
 
 end

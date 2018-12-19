@@ -154,7 +154,7 @@ module module_cal_spread
       iunit=12
       write(*,*) 'write ',trim(this%varname),' spread to',trim(fileout)
       open(iunit,file=trim(fileout),form='unformatted',convert='BIG_ENDIAN')
-         write(iunit) this%nx,this%ny,this%nz
+         write(iunit) this%nx,this%ny,this%nz,this%numens
          write(iunit) this%sprd
       close(iunit)
 
