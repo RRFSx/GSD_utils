@@ -296,8 +296,11 @@ module module_RW_DPQC
         integer(2), allocatable :: pixel_x(:)
         integer(2), allocatable :: pixel_y(:)
         integer, allocatable :: pixel_count(:)
-        integer :: i
+        logical :: ifpixel
+        integer :: i,ii,jj
 
+        ifpixel=.false.
+        
         this%crwfile=trim(crwfile)
 
         call ncrwin%open(trim(crwfile),"r",0)
@@ -325,6 +328,9 @@ module module_RW_DPQC
         call ncrwin%get_att("radarName-value",this%radarName)
         write(*,*) 'radarName       =',this%radarName
 !
+        if(int(this%rvcp_value) == 35 ) ifpixel=.true.
+        if(int(this%rvcp_value) == 212) ifpixel=.true.
+         
         minutes=this%Time/60
         this%iss=this%Time-minutes*60
         call mt%mins2date(minutes,this%iyy,this%imm,this%idd,this%ihh,this%imin)
@@ -337,7 +343,7 @@ module module_RW_DPQC
         allocate(this%NyquistV(this%Azimuth))
         allocate(this%rw2d(this%Gate,this%Azimuth))
 
-        if(int(this%rvcp_value) == 35 ) then
+        if(ifpixel) then
            call ncrwin%get_dim("pixel",this%pixel)
            write(*,*) 'pixel=',this%pixel
            allocate(pixel_x(this%pixel))
@@ -350,7 +356,9 @@ module module_RW_DPQC
            call ncrwin%get_var("AliasedVelocityDPQC",this%pixel,rw1d)
            this%rw2d=-999.0
            do i=1,this%pixel
-              this%rw2d(pixel_y(i),pixel_x(i))=rw1d(i)
+              ii=max(1,min(pixel_y(i)+1,this%Gate))
+              jj=max(1,min(pixel_x(i)+1,this%Azimuth))
+              this%rw2d(ii,jj)=rw1d(i)
            enddo
            deallocate(pixel_x)
            deallocate(pixel_y)
@@ -364,7 +372,7 @@ module module_RW_DPQC
         call ncrwin%get_var("AzimuthalSpacing",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("GateWidth",this%Azimuth,this%rwAzimuth)
         this%GateWidth=this%rwAzimuth(1)
-        call ncrwin%get_var("RadialTime",this%Azimuth,ifld1d)
+!        call ncrwin%get_var("RadialTime",this%Azimuth,ifld1d)
 
         call ncrwin%get_var("Azimuth",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("NyquistVelocity",this%Azimuth,this%NyquistV)
