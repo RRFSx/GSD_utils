@@ -9,6 +9,7 @@ begin
 ;=================================================;
 
   path="/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/GSD_UTL/tools/buildsprd/bin/"
+  testid="12z_m11m12" 
   testid="21z_m08m09" 
   variableid=(/"ps","tv","u","v","rh"/)
   domain="X0001-1580Y0001-1000Z0001-0002"
@@ -86,20 +87,20 @@ begin
   do iv=0,4
      resources@tiMainString    = variableid(iv) + " Spread: " + testid
      if(iv .eq. 0 ) then
-;        resources@cnLevels              = (/0.06,0.07,0.08,0.10,0.12,0.14,0.18,0.22,0.26,0.30/) ; ps 
-        resources@cnLevels              = (/0.05,0.06,0.07,0.08,0.10,0.12,0.14,0.16,0.18,0.20/) ; ps 
+        resources@cnLevels              = (/0.06,0.07,0.08,0.10,0.12,0.14,0.18,0.22,0.26,0.30/) ; ps 
+;        resources@cnLevels              = (/0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.16/) ; ps 
         map = gsn_csm_contour_map(wks,fieldps(0,:,:),resources)
      else if ( iv .eq. 1 ) then
 ;        resources@cnLevels              = (/0.6,0.8,1.0,1.2,1.4,1.8,2.0,2.2,2.4,2.8/)  ; T
-        resources@cnLevels              = (/0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.8,2.0,2.2/)  ; T
+        resources@cnLevels              = (/0.2,0.3,0.4,0.5,0.6,0.8,1.0,1.2,1.4,1.8/)  ; T
         map = gsn_csm_contour_map(wks,fieldtv(0,:,:),resources)
      else if ( iv .eq. 2 ) then
 ;        resources@cnLevels             = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
-        resources@cnLevels              = (/0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,2.0,2.4/)  ; U,V
+        resources@cnLevels              = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
         map = gsn_csm_contour_map(wks,fieldu(0,:,:),resources)
      else if ( iv .eq. 3 ) then
 ;        resources@cnLevels              = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
-        resources@cnLevels              = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
+        resources@cnLevels              = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
         map = gsn_csm_contour_map(wks,fieldv(0,:,:),resources)
      else if ( iv .eq. 4 ) then
 ;        resources@cnLevels              = (/0.02,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20/) ; rh 

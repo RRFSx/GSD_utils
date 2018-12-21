@@ -12,7 +12,10 @@ begin
   testid="21z_m08m09" 
   variableid=(/"ps","tv","u","v","rh"/)
   domain="X0001-1580Y0001-1000Z0001-0002"
-  domain="X0001-0800Y0001-0500Z0001-0002"
+  domain="X0001-0700Y0300-0600Z0001-0002"
+  domain="X0200-0650Y0300-0650Z0001-0002"
+  domain="X0200-0450Y0350-0550Z0001-0002"
+  domain="X0150-0450Y0050-0350Z0001-0002"
   filedata=path+"/plot_"+testid+"/spread_"+domain+".bin"
 
   resultsfile="Cspread."+testid+"."+domain
@@ -113,6 +116,7 @@ begin
   presources@tiMainFontHeightF=0.01
 
   presources@cnLevelSelectionMode  = "ExplicitLevels"
+  presources@cnLevelSelectionMode  = "AutomaticLevels"
   presources@cnFillColors = (/ 0,11,21,31,38,48,58,68,78,88,98/)
 
   do iv = 0,4
@@ -120,18 +124,27 @@ begin
      map = gsn_csm_contour_map(wks,terrain,resources)
      if ( iv .eq. 0 ) then
         presources@cnLevels              = (/0.06,0.07,0.08,0.10,0.12,0.14,0.18,0.22,0.26,0.30/) ; ps
+        presources@cnLevelSpacingF=0.002
         plot = gsn_contour(wks,fieldps(0,:,:),presources)
      else if ( iv .eq. 1 ) then
         presources@cnLevels              = (/0.6,0.8,1.0,1.2,1.4,1.8,2.0,2.2,2.4,2.8/)  ; T
+        presources@cnLevels              = (/0.2,0.3,0.4,0.5,0.6,0.8,1.0,1.2,1.4,1.8/)  ; T
+        presources@cnLevelSpacingF=0.10
         plot = gsn_contour(wks,fieldtv(0,:,:),presources)
      else if ( iv .eq. 2 ) then
         presources@cnLevels             = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
+        presources@cnLevels             = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
+        presources@cnLevelSpacingF=0.15
         plot = gsn_contour(wks,fieldu(0,:,:),presources)
      else if ( iv .eq. 3 ) then
         presources@cnLevels              = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
+        presources@cnLevels             = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
+        presources@cnLevelSpacingF=0.15
         plot = gsn_contour(wks,fieldv(0,:,:),presources)
      else if ( iv .eq. 4 ) then
         presources@cnLevels              = (/0.02,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20/) ; rh
+        presources@cnLevels              = (/0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.10,0.12,0.14/) ; rh
+        presources@cnLevelSpacingF=0.005
         plot = gsn_contour(wks,fieldrh(0,:,:),presources)
      end if
      end if
