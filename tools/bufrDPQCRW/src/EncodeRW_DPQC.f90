@@ -4,10 +4,12 @@ Program EncodeRW_DPQC
 !     write out as BUFR
 !
   use module_RW_DPQC, only : rw_dpqc
+  use module_radar_station_config, only : rdrsta_config
 
   implicit none
 
   type(rw_dpqc) :: rwdpqc
+  type(rdrsta_config) :: rscf
 
   integer :: nfile
   character(len=180),allocatable :: filelist(:)
@@ -16,6 +18,8 @@ Program EncodeRW_DPQC
 
   integer :: i
 !
+
+  call rscf%readcf("radar_station_list.txt")
 !
   wrtfile='l2rwbufr_nssl'
 !
@@ -43,11 +47,12 @@ Program EncodeRW_DPQC
      write(*,'(a,I3,a)') "processing ",i,trim(crwfile)
 
      call rwdpqc%readnc(trim(crwfile))
-     call rwdpqc%wrtbufr(trim(wrtfile))
+     call rwdpqc%wrtbufr(trim(wrtfile),rscf)
      call rwdpqc%destroy()
 
-   enddo
+  enddo
 
-   deallocate(filelist)
+  deallocate(filelist)
+  call rscf%destroy()
 
 End program EncodeRW_DPQC
