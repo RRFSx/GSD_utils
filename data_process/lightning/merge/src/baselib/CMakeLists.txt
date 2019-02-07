@@ -12,5 +12,5 @@ ADD_EXECUTABLE (testlib.exe testlib.f90)
 # TARGET_LINK_LIBRARIES(testlib.exe base ncio)
 TARGET_LINK_LIBRARIES(testlib.exe base ncio)
 set_target_properties(testlib.exe PROPERTIES LINK_FLAGS "-O3")
-TARGET_LINK_LIBRARIES(testlib.exe ${NETCDF_LIB})
+TARGET_LINK_LIBRARIES(testlib.exe ${NETCDFLIB})
 

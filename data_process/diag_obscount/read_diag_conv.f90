@@ -287,7 +287,7 @@ END PROGRAM read_diag_conv
 
        read(crecord,*)ictype(nc),icsubtype(nc),icuse(nc)
 !       write(6,1031)ioctype(nc),ictype(nc),icsubtype(nc),icuse(nc)
-1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g12.6)
+1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g13.6)
        if(trim(ioctype(nc)) == 'ps') imap_ps(ictype(nc))=icuse(nc)
        if(trim(ioctype(nc)) == 't') imap_t(ictype(nc))=icuse(nc)
        if(trim(ioctype(nc)) == 'q') imap_q(ictype(nc))=icuse(nc)
