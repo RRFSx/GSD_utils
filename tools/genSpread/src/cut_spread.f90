@@ -27,19 +27,25 @@ program cut_spread
    character(len=180) :: basefile
    character(len=180) :: pathfull
    character(len=180) :: pathcut
+   character(len=80) :: ctestname
+   integer :: numSubdomain
+   integer :: nx_sm(10),ny_sm(10),nz_sm(10)
+   integer :: nx_em(10),ny_em(10),nz_em(10)
+   namelist/setup/ basefile,pathfull, pathcut,ctestname,numSubdomain, &
+                   nx_sm,ny_sm,nz_sm,nx_em,ny_em,nz_em
+
    integer :: nx_s,ny_s,nz_s
    integer :: nx_e,ny_e,nz_e
-   namelist/setup/ basefile,pathfull, pathcut,nx_s,ny_s,nz_s,nx_e,ny_e,nz_e
-
-   integer :: i,iv
+   integer :: i,iv,id
    integer :: iunit,iunit_out
 !
-   nx_s=1
-   ny_s=1
-   nz_s=1
-   nx_e=10
-   ny_e=10
-   nz_e=10
+   numSubdomain=1
+   nx_sm=1
+   ny_sm=1
+   nz_sm=1
+   nx_em=1
+   ny_em=1
+   nz_em=1
 !
    open(10,file='namelist.cut')
       read(10,setup)
@@ -72,13 +78,21 @@ program cut_spread
    varnamelist(4)='v'
    varnamelist(5)='rh'
 !
-   write(spreadfile_cut,'(a,a,6(a1,I4.4),a)') trim(pathcut),'/spread_','X',&
+   do id=1,numSubdomain
+   nx_s=nx_sm(id)
+   ny_s=ny_sm(id)
+   nz_s=nz_sm(id)
+   nx_e=nx_em(id)
+   ny_e=ny_em(id)
+   nz_e=nz_em(id)
+
+   write(spreadfile_cut,'(a,a,a,6(a1,I4.4),a)') trim(pathcut),trim(ctestname),'/spread_','X',&
                   nx_s,'-',nx_e,'Y',ny_s,'-',ny_e,'Z',nz_s,'-',nz_e,'.bin'
    open(iunit_out,file=trim(spreadfile_cut),form='unformatted')
 !
    do iv=1,numvar
       varname=trim(varnamelist(iv)) 
-      write(spreadfile,'(a,a,a,a)') trim(pathfull),'/spread_',trim(varname),'.bin'
+      write(spreadfile,'(a,a,a,a,a)') trim(pathfull),trim(ctestname),'/spread_',trim(varname),'.bin'
       write(*,*) 'read in ',trim(spreadfile)
       open(iunit,file=trim(spreadfile),form='unformatted',convert='BIG_ENDIAN')
          read(iunit) nx,ny,nz
@@ -113,6 +127,8 @@ program cut_spread
       close(iunit)
    enddo ! iv
    close(iunit_out)
+
+   enddo ! id
 
    deallocate(varnamelist)
    deallocate(rlat)

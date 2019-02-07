@@ -2,10 +2,10 @@
 
 # Set the queueing options 
 #PBS -l procs=5
-#PBS -l walltime=4:25:00
+#PBS -l walltime=0:25:00
 #PBS -A rtwbl
 ## #PBS -A wrfruc
-## #PBS -q debug
+#PBS -q debug
 #PBS -N wrf_gsi
 #PBS -l partition=tjet
 #PBS -j oe

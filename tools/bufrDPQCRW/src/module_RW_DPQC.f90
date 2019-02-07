@@ -6,6 +6,7 @@ module module_RW_DPQC
 !  use kinds, only: r_kind,r_single
   use module_ncio, only : ncio
   use module_time, only : mtime
+  use module_radar_station_config, only : rdrsta_config
 
   implicit none
   type(ncio)  :: ncrwin
@@ -159,7 +160,7 @@ module module_RW_DPQC
 
      end function 
 !
-     subroutine write_rw2bufr(this,cwrtfile)
+     subroutine write_rw2bufr(this,cwrtfile,rscf)
 !
 !  write DPQC radial wind to BUFR file so they
 !      can be used in GSI
@@ -177,6 +178,7 @@ module module_RW_DPQC
 
         class(rw_dpqc),intent(in) :: this
         character(len=*),intent(in)  :: cwrtfile
+        type(rdrsta_config),intent(in) :: rscf
 
         integer, parameter :: mxmn=10, mxlv=1500
         character(80):: hdstr= 'SSTN CLAT CLON HSMSL HSALG ANEL ANAZ QCRW'
@@ -196,7 +198,7 @@ module module_RW_DPQC
         equivalence(rstation_id,c_sid)
 
         integer        :: numrwbin
-        integer        :: i,iaz,iret
+        integer        :: i,id,iaz,iret
 !
         integer          :: valid_time
         character(len=8) :: subset2
@@ -224,9 +226,16 @@ module module_RW_DPQC
         hdr(1)=rstation_id
         hdr(2)=this%Latitude
         hdr(3)=this%Longitude
-        hdr(5)=this%Height
+        hdr(4)=this%Height        ! HEIGHT OF STATION GROUND ABOVE MSL
+        hdr(5)=this%Height        ! HEIGHT OF ANTENNA ABOVE GROUND
         hdr(6)=this%Elevation
         hdr(8)=1.0
+
+        id=rscf%findid(this%radarName)
+        if(id /= 0) then
+           hdr(4)=rscf%hsmsl(id)     ! HEIGHT OF STATION GROUND ABOVE MSL
+           hdr(5)=rscf%hsalg(id)     ! HEIGHT OF ANTENNA ABOVE GROUND
+        endif
         
         hdr2(1)=this%iyy
         hdr2(2)=this%imm
@@ -253,7 +262,7 @@ module module_RW_DPQC
           hdr3(2)=this%NyquistV(iaz)
           numrwbin=0
           do i=1,this%Gate
-             if(this%rw2d(i,iaz) >= 0.0 .and. this%rw2d(i,iaz) < 200.0) then
+             if(this%rw2d(i,iaz) > -500.0 .and. this%rw2d(i,iaz) < 500.0) then  ! missing value -99900
                numrwbin=numrwbin+1
                obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
                obs(2,numrwbin)=this%rw2d(i,iaz)
@@ -296,8 +305,11 @@ module module_RW_DPQC
         integer(2), allocatable :: pixel_x(:)
         integer(2), allocatable :: pixel_y(:)
         integer, allocatable :: pixel_count(:)
-        integer :: i
+        logical :: ifpixel
+        integer :: i,ii,jj
 
+        ifpixel=.false.
+        
         this%crwfile=trim(crwfile)
 
         call ncrwin%open(trim(crwfile),"r",0)
@@ -325,6 +337,9 @@ module module_RW_DPQC
         call ncrwin%get_att("radarName-value",this%radarName)
         write(*,*) 'radarName       =',this%radarName
 !
+        if(int(this%rvcp_value) == 35 ) ifpixel=.true.
+        if(int(this%rvcp_value) == 212) ifpixel=.true.
+         
         minutes=this%Time/60
         this%iss=this%Time-minutes*60
         call mt%mins2date(minutes,this%iyy,this%imm,this%idd,this%ihh,this%imin)
@@ -337,7 +352,7 @@ module module_RW_DPQC
         allocate(this%NyquistV(this%Azimuth))
         allocate(this%rw2d(this%Gate,this%Azimuth))
 
-        if(int(this%rvcp_value) == 35 ) then
+        if(ifpixel) then
            call ncrwin%get_dim("pixel",this%pixel)
            write(*,*) 'pixel=',this%pixel
            allocate(pixel_x(this%pixel))
@@ -350,7 +365,9 @@ module module_RW_DPQC
            call ncrwin%get_var("AliasedVelocityDPQC",this%pixel,rw1d)
            this%rw2d=-999.0
            do i=1,this%pixel
-              this%rw2d(pixel_y(i),pixel_x(i))=rw1d(i)
+              ii=max(1,min(pixel_y(i)+1,this%Gate))
+              jj=max(1,min(pixel_x(i)+1,this%Azimuth))
+              this%rw2d(ii,jj)=rw1d(i)
            enddo
            deallocate(pixel_x)
            deallocate(pixel_y)
@@ -364,7 +381,7 @@ module module_RW_DPQC
         call ncrwin%get_var("AzimuthalSpacing",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("GateWidth",this%Azimuth,this%rwAzimuth)
         this%GateWidth=this%rwAzimuth(1)
-        call ncrwin%get_var("RadialTime",this%Azimuth,ifld1d)
+!        call ncrwin%get_var("RadialTime",this%Azimuth,ifld1d)
 
         call ncrwin%get_var("Azimuth",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("NyquistVelocity",this%Azimuth,this%NyquistV)
