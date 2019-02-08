@@ -9,7 +9,7 @@
 
 module module_lightning_base
 
-   use kinds, only: r_kind, r_single, rmissing
+   use kinds2, only: r_kind, r_single, rmissing
 
    implicit none
 

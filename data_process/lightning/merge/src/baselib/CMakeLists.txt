@@ -1,7 +1,6 @@
-MESSAGE(STATUS "NETCDF dirctory: $ENV{NETCDF}/include")
-INCLUDE_DIRECTORIES("$ENV{NETCDF}/include")
+include_directories( ${GSIINC} ${NETCDFINC} )
 
-set(SRC_BASE kinds.f90 module_map_utils.f90 module_time.f90)
+set(SRC_BASE kinds2.f90 module_map_utils.f90 module_time.f90)
 set_source_files_properties(module_ncio.f90 PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
 set_source_files_properties(${SRC_BASE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
 

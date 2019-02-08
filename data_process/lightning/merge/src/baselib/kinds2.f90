@@ -1,4 +1,4 @@
-module kinds
+module kinds2
 !$$$  module documentation block
 !                .      .    .                                       .
 ! module:   kinds
@@ -44,4 +44,4 @@ module kinds
   real(r_single),parameter,public :: rmissing=-99999.0
   real(i_kind),parameter,public :: imissing=-99999
 
-end module kinds
+end module kinds2
