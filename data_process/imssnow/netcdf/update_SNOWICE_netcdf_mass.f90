@@ -99,6 +99,7 @@ subroutine update_SNOWICE_netcdf_mass(snowiceRR, xland, luse, nlon, nlat,xlandIM
   real(r_single),allocatable::soiltemp(:,:,:)
 
   real(r_single),allocatable::snow(:,:)
+  real(r_single),allocatable::snowRRbk(:,:)
   real(r_single),allocatable::snowh(:,:)
   real(r_single),allocatable::snowc(:,:)
   real(r_single),allocatable::seaice(:,:)
@@ -213,6 +214,7 @@ subroutine update_SNOWICE_netcdf_mass(snowiceRR, xland, luse, nlon, nlat,xlandIM
   nsig_regional=end_index(3)
   write(6,*)' nlon,lat,sig_regional=',nlon_regional,nlat_regional,nsig_regional
   allocate(snow(nlon_regional,nlat_regional))
+  allocate(snowRRbk(nlon_regional,nlat_regional))
   allocate(snowh(nlon_regional,nlat_regional))
   allocate(snowc(nlon_regional,nlat_regional))
   allocate(seaice(nlon_regional,nlat_regional))
@@ -679,7 +681,10 @@ endif
   write(6,*) '================================================='
 
   call ext_ncd_ioclose(dh1, Status)
-
+!
+! save the RR background snow in snowRRbk
+!
+  snowRRbk=snow
 !
 !  trim snow
 !
@@ -750,7 +755,7 @@ endif
               goto 222
               endif
 
-          if(snow(ii,jj) > 1.) then
+          if(snowRRbk(ii,jj) > 1.) then
             numnb = numnb + 1
              snowsum = snowsum + snow(ii,jj)
              snowhsum = snowhsum + snowh(ii,jj)
@@ -1353,7 +1358,6 @@ endif ! 1==2
 end subroutine update_SNOWICE_netcdf_mass
 
 SUBROUTINE wrf_debug( level , str )
-  USE module_wrf_error
   IMPLICIT NONE
   CHARACTER*(*) str
   INTEGER , INTENT (IN) :: level
