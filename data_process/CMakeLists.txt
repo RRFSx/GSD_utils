@@ -18,6 +18,8 @@ enable_language (C)
 #SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so") #Cheyenne
 
 #for Jet
+### be sure to load these modules:
+#-- module purge; module load newdefaults  szip/2.1  intel/15.0.3.187  impi/5.1.1.109 hdf5/1.8.9 netcdf4/4.2.1.1
 ###SET(GSIBUILD  "/mnt/lfs1/projects/wrfruc/gge/MPMC/b_comGSIv3.7_4f76d254/ji05.intel_15.0.3.187.impi_5.1.1.109")_
 ###set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
 SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build")
@@ -88,7 +90,8 @@ add_subdirectory(ref2tten)
 add_subdirectory(encode_tamdar)
 add_subdirectory(satcast)
 add_subdirectory(nasalarc/bufr)
-add_subdirectory(ssthires/netcdf)
+#add_subdirectory(ssthires/netcdf)
+add_subdirectory(ssthires/grib2)
 
 
 
