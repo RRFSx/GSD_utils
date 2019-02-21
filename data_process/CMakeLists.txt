@@ -1,13 +1,32 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(ENV{CC} "icc")
+set(ENV{CXX} "icpc")
+set(ENV{FC} "mpif90 -f90=ifort")
 project(data_process)
 enable_language (Fortran)
 enable_language (C)
 
-#SET(GSIBUILD  "/glade/work/geguo/MPMC/b_release_v3.7/ci06.intel_17.0.1.mpt_2.15f")
-SET(GSIBUILD  "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/GSD_GSI/build")
-set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
-set(wrfframe "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/rapid-refresh/WRFV3.9/frame/pack_utils.o")
+#for Cheyenne
+###SET(GSIBUILD  "/glade/work/geguo/MPMC/b_release_v3.7/ci06.intel_17.0.1.mpt_2.15f")
+#SET(GSIBUILD  "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/GSD_GSI/build")
+#set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
+#set(wrfframe "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/rapid-refresh/WRFV3.9/frame/pack_utils.o")
+### MPI_FORTRAN_LIBRARIES
+#SET(MPILIB  "/glade/u/apps/ch/os/usr/lib64/libpthread.so;/opt/sgi/mpt/mpt-2.15/lib/libmpi.so") #Cheyenne
+### BLAS_iomp5_LIBRARY
+#SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so") #Cheyenne
+
+#for Jet
+###SET(GSIBUILD  "/mnt/lfs1/projects/wrfruc/gge/MPMC/b_comGSIv3.7_4f76d254/ji05.intel_15.0.3.187.impi_5.1.1.109")_
+###set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
+SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build")
+set(COMUPP "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/upp/GSD_UPP_20190217_bc55f77/comupp")
+set(wrfframe "/mnt/lfs1/projects/rtwbl/mhu/code/wrf/WRFV3.9.1.1/frame/pack_utils.o")
+SET(MPILIB  "/apps/intel/impi/5.1.1.109/intel64/lib/libmpifort.so;/apps/intel/impi/5.1.1.109/intel64/lib/release_mt/libmpi.so;/apps/intel/impi/5.1.1.109/intel64/lib/libmpigi.a;/usr/lib64/libdl.so;/usr/lib64/librt.so;/usr/lib64/libpthread.so") #Jet
+SET(LIBIOMP5  "-openmp") #Jet
+
+#----------------------------Normally no changes needed after this line ------------------------
 SET(NETCDF  $ENV{NETCDF})
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -22,9 +41,9 @@ SET(G2INC  "${COMUPP}/include")
 
 SET(GSILIB  "${GSIBUILD}/lib/libgsilib_shrd.a")
 SET(wrflib  "${GSIBUILD}/lib/libWRFLIB.a")
-SET(NETCDFLIB  "${NETCDF}lib/libnetcdf.a;${NETCDF}lib/libnetcdff.a")
-SET(MPILIB  "/glade/u/apps/ch/os/usr/lib64/libpthread.so;/opt/sgi/mpt/mpt-2.15/lib/libmpi.so")
-SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so")
+###NETCDF_LIBRARIES
+#SET(NETCDFLIB  "${NETCDF}/lib/libnetcdf.a;${NETCDF}/lib/libnetcdff.a") #Cheyenne
+SET(NETCDFLIB  "${NETCDF}/lib/libnetcdf.so;${NETCDF}/lib/libnetcdff.so")  #Jet
 
 SET(LIBZ      "/usr/lib64/libz.so")
 SET(LIBPNG    "/usr/lib64/libpng.so")

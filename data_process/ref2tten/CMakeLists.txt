@@ -16,7 +16,7 @@ include_directories( ${GSIINC} ${NETCDFINC} )
 set(EXE ${EXEref2tten})
 add_executable(${EXE} ${src_all})
 set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
-target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${MPILIB} -lnetcdf -lnetcdff ${GSILIB} )
+target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${MPILIB} ${GSILIB} )
 
 
 
