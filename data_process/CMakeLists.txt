@@ -15,6 +15,9 @@ if(EXISTS /jetmon)
   set(HOST-Jet "True" )
 endif()
 
+### be sure to load these modules on Jet:
+#-- module purge; module load newdefaults  szip/2.1  intel/15.0.3.187  impi/5.1.1.109 hdf5/1.8.9 netcdf4/4.2.1.1
+
 if(HOST-Cheyenne)
   ###SET(GSIBUILD  "/glade/work/geguo/MPMC/b_release_v3.7/ci06.intel_17.0.1.mpt_2.15f")
   SET(GSIBUILD  "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/GSD_GSI/build")
@@ -25,8 +28,6 @@ if(HOST-Cheyenne)
   ### BLAS_iomp5_LIBRARY
   SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so")
 elseif(HOST-Jet)
-  ### be sure to load these modules:
-  #-- module purge; module load newdefaults  szip/2.1  intel/15.0.3.187  impi/5.1.1.109 hdf5/1.8.9 netcdf4/4.2.1.1
     ###SET(GSIBUILD  "/mnt/lfs1/projects/wrfruc/gge/MPMC/b_comGSIv3.7_4f76d254/ji05.intel_15.0.3.187.impi_5.1.1.109")_
     ###set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
   SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build")
