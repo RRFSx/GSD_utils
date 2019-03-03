@@ -7,9 +7,8 @@ set_source_files_properties(${SRC_BASE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS
 ADD_LIBRARY (ncio STATIC module_ncio.f90)
 ADD_LIBRARY (base STATIC ${SRC_BASE})
 
-ADD_EXECUTABLE (testlib.exe testlib.f90)
-# TARGET_LINK_LIBRARIES(testlib.exe base ncio)
-TARGET_LINK_LIBRARIES(testlib.exe base ncio)
-set_target_properties(testlib.exe PROPERTIES LINK_FLAGS "-O3")
-TARGET_LINK_LIBRARIES(testlib.exe ${NETCDFLIB})
+#ADD_EXECUTABLE (testlib.exe testlib.f90)
+#TARGET_LINK_LIBRARIES(testlib.exe base ncio)
+#set_target_properties(testlib.exe PROPERTIES LINK_FLAGS "-O3")
+#TARGET_LINK_LIBRARIES(testlib.exe ${NETCDFLIB})
 

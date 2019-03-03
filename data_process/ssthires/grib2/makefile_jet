@@ -4,6 +4,7 @@
 
 WRFDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WRFV3.8_GSD_hybridcoord
 UNGRIBDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WPSV3.9/ungrib/src
+GSIDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi
 
 FC  =  mpif90 -free -f90=ifort
 #FLAGS= -g -traceback -O3 -fp-model precise -assume byterecl -fpe0 -DLINUX
@@ -15,7 +16,7 @@ JASPER_LIB  = -L/usr/lib64 -ljasper
 PNG_LIB     = -L/usr/lib64 -lpng
 Z_LIB       = -L/usr/lib64 -lz
 
-INCLD=  -I${NETCDF4}/include -I../../../include ${G2_INC4}
+INCLD=  -I${NETCDF4}/include -I${GSIDIR}/include ${G2_INC4}
 LIBS =  \
         ${G2_LIB4} ${JASPER_LIB} ${PNG_LIB} ${Z_LIB} \
         -L${NETCDF4}/lib -lnetcdf -lnetcdff \

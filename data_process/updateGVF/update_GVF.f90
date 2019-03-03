@@ -350,6 +350,8 @@ subroutine interp_bili_2d(rlonmin_in,rlatmin,rdx,rdy,nx,ny,xlon,ylat,vegfrc,nxob
                       vegfrc_obs(min(ip+1,nxobs),jp)* dx*(1.0-dy) + &
                       vegfrc_obs(ip,min(jp+1,nyobs))* (1.0-dx)*dy + &
                       vegfrc_obs(min(nxobs,ip+1),min(nyobs,jp+1))*dx*dy
+       else
+          vegfrc(i,j)=0.0
        endif
      enddo
   enddo

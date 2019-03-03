@@ -3,16 +3,16 @@
 
 # Define the fortran compiler and options
 
-WRFDIR=/pan2/projects/nrtrr/alexander/code/hrrr/primary/RR-svn/trunk/WRFV3.6_2015
-GSIDIR=/pan2/projects/nrtrr/alexander/code/rapidrefresh/rapid-refresh/GSI
-FC   =  mpiifort -free
+WRFDIR=/mnt/lfs1/projects/rtwbl/mhu/code/wrf/WRFV3.9.1.1
+GSIDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build
+FC   =  mpif90 -free -f90=ifort
 CC  = mpiicc
 FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -DLINUX #-g -traceback # -convert big_endian
 CPPFLAGS =  -D_UNDERSCORE -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
-GSILIBS =  ${GSIDIR}/src/main -lgsi #../../../lib -lw3emc_i4r8 -lw3nco_i4r8 -lbacio -lbufr_i4r8
+GSILIBS =  ${GSIDIR}/lib -lgsilib_shrd -lgsilib_wrf #../../../lib -lw3emc_i4r8 -lw3nco_i4r8 -lbacio -lbufr_i4r8
 
 INCLD=  -I${NETCDF}/include -I${GSIDIR}/include
-LIBS =  ${WRFDIR}/external/io_netcdf/libwrfio_nf.a -L${NETCDF}/lib -lnetcdf -L${GSILIBS}
+LIBS =  ${WRFDIR}/external/io_netcdf/libwrfio_nf.a -L${NETCDF}/lib -lnetcdf -lnetcdff -L${GSILIBS}
 
 OBJS = read_netcdf_mass.o BackgroundCld.o pbl_height.o vinterp_radar_ref.o \
        build_missing_REFcone.o radar_ref2tten.o smooth.o convert_stcst2ref.o convert_lghtn2ref.o read_Lightning_cld.o

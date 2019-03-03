@@ -130,7 +130,8 @@ PROGRAM read_diag_conv
              iusev=int(rdiagbuf(11,i))    ! analysis usage flag ( value ) 
              ddiff=rdiagbuf(18,i)   ! obs-ges used in analysis (K)
              rerr = 0
-             if (rdiagbuf(16,i) > 0) then   ! final inverse observation error (K**-1)
+             if (rdiagbuf(16,i) > 10e-20) then   ! final inverse observation error (K**-1)
+               write(*,*) rdiagbuf(16,i)
                rerr=1.0/rdiagbuf(16,i)
              end if 
              robs1=rdiagbuf(17,i)    !  observation (K)

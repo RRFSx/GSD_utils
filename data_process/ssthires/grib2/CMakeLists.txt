@@ -8,7 +8,7 @@ include_directories( ${GSIINC} ${G2INC} ${NETCDFINC} )
 set(EXE ${EXEsst})
 add_executable(${EXE} ${src_all})
 set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
-target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${LIBG2} ${LIBJASPER} ${LIBPNG} ${LIBZ} ${LIBBACIO} ${LIBW3NCO})
+target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${LIBG2_WPS} ${LIBJASPER} ${LIBPNG} ${LIBZ} ${LIBBACIO_UPP} ${LIBW3EMC} ${LIBW3NCO})
 
 
 
