@@ -106,6 +106,8 @@ add_subdirectory(updatebk/netcdf)
 add_subdirectory(imssnow/netcdf)
 add_subdirectory(lightning/merge/src/baselib)
 add_subdirectory(lightning/merge/src/getobsltng)
+add_subdirectory(lightning/netcdf_bufr)
+add_subdirectory(lightning/netcdf)
 
 add_subdirectory(diag_obscount)
 add_subdirectory(ref2tten)
@@ -114,6 +116,4 @@ add_subdirectory(satcast)
 add_subdirectory(nasalarc/bufr)
 #add_subdirectory(ssthires/netcdf)
 add_subdirectory(ssthires/grib2)
-
-
 
