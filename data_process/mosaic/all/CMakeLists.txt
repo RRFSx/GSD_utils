@@ -8,7 +8,7 @@ include_directories( ${GSIINC} ${NETCDFINC} ${G2INC} )
 set(EXE "process_NSSL_mosaic.exe")
 add_executable(${EXE} ${src_all})
 set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
-target_link_libraries( ${EXE} ${NETCDFLIB} ${GSILIB} ${LIBG2} ${LIBG2TMPL} ${LIBZ} ${LIBPNG} ${LIBJASPER} ${MPILIB} ${LIBBUFR} ${LIBBACIO} ${LIBSP} ${LIBIOMP5} )
+target_link_libraries( ${EXE} ${NETCDFLIB} ${GSILIB} ${LIBG2_WPS} ${LIBG2TMPL} ${LIBZ} ${LIBPNG} ${LIBJASPER} ${MPILIB} ${LIBBUFR} ${LIBBACIO} ${LIBSP} ${LIBIOMP5} )
 
 # set(EXE "read_bufr.exe")
 # add_executable(${EXE} readbufr.f90)

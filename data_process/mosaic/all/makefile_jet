@@ -7,20 +7,25 @@ FC  =  mpif90 -f90=ifort -free
 CC  = cc
 FLAGS= -fp-model precise -assume byterecl -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
 CPPFLAGS =  -D_UNDERSCORE -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
-GSILIBS =../../../lib -lw3emc_i4r8 -lw3nco_i4r8 -lbacio -lbufr_i4r8
 
-UPPDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/rapid-refresh/UPP_2015/comupp
+GSIDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi
+GSILIBS =${GSIDIR}/lib -lw3emc_v -lw3nco_v -lbacio_v -lbufr_v
 
-G2_INC4     = -I${UPPDIR}/include
+WPSDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WPSV3.9
+UPPDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/upp/GSD_UPP_20190217_bc55f77/comupp
+
+G2_INC4     = -I${WPSDIR}/ungrib/src/ngl/g2
+#G2_INC4     = -I${UPPDIR}/include
 G2TMPL_INC  = -I${UPPDIR}/include
-G2_LIB4     = ${UPPDIR}/lib/libg2.a
+G2_LIB4     = ${WPSDIR}/ungrib/src/ngl/g2/libg2_4.a
+#G2_LIB4     = ${UPPDIR}/lib/libg2.a
 G2TMPL_LIB  = ${UPPDIR}/lib/libg2tmpl.a
 JASPER_LIB  = -L/usr/lib64 -ljasper
 PNG_LIB     = -L/usr/lib64 -lpng
 Z_LIB       = -L/usr/lib64 -lz
 NETCDF      = /apps/netcdf/3.6.3-intel
 
-INCLD=  -I${NETCDF}/include -I../../../include ${G2_INC4}
+INCLD=  -I${NETCDF}/include -I${GSIDIR}/include ${G2_INC4}
 LIBS =  \
         ${G2_LIB4} ${G2TMPL_LIB} ${JASPER_LIB} ${PNG_LIB} ${Z_LIB} \
         -L${NETCDF}/lib -lnetcdf -L${GSILIBS}
