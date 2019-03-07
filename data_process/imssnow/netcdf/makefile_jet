@@ -5,12 +5,13 @@
 
 WRFDIR=/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WRFV3.8_GSD_hybridcoord
 UPPLIBDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/upp/GSD_UPP_20190217_bc55f77/comupp/lib
+GSIDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi
 NETCDF=/apps/netcdf/3.6.3-intel
 
 FC   =  mpif90 -free -f90=ifort
 FLAGS= -O3 -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX ## -convert big_endian
 
-INCLD=  -I${NETCDF}/include -I/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build/include
+INCLD=  -I${NETCDF}/include -I${GSIDIR}/include
 LIBS =  -L${WRFDIR}/external/io_netcdf -lwrfio_nf -L${NETCDF}/lib -lnetcdf \
         -L${UPPLIBDIR}  -lbacio -lip -lsp -lw3nco -lw3emc
 

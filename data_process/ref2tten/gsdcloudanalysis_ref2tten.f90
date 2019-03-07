@@ -466,7 +466,7 @@ program gsdcloudanalysis_ref2tten
 end program gsdcloudanalysis_ref2tten
 
 SUBROUTINE wrf_debug( level , str )
-  USE module_wrf_error
+!  USE module_wrf_error
   IMPLICIT NONE
   CHARACTER*(*) str
   INTEGER , INTENT (IN) :: level

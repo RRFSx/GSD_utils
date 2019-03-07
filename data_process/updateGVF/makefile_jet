@@ -2,10 +2,10 @@
 #! /bin/sh -v
 
 # Define the fortran compiler and options
-
+GSIDIR=/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi
 FC  =  mpif90 -f90=ifort
 FLAGS= -g -traceback 
-GSILIBS =../../lib -lw3emc_i4r8 -lw3nco_i4r8 -lbacio -lbufr_i4r8
+GSILIBS =${GSIDIR}/lib -lw3emc_v -lw3nco_v -lbacio_v -lbufr_v
 
 G2_VER=v2.5.0
 G2TMPL_VER=v1.3.0
@@ -24,7 +24,7 @@ PNG_LIB     = -L/usr/lib64 -lpng
 Z_LIB       = -L/usr/lib64 -lz
 NETCDF      = /apps/netcdf/3.6.3-intel
 
-INCLD=  -I${NETCDF}/include -I../../../include ${G2_INC4}
+INCLD=  -I${NETCDF}/include -I${GSIDIR}/include ${G2_INC4}
 LIBS =  \
         ${G2_LIB4} ${G2TMPL_LIB} ${JASPER_LIB} ${PNG_LIB} ${Z_LIB} \
         -L${NETCDF}/lib -lnetcdf -L${GSILIBS}

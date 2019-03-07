@@ -9,7 +9,7 @@
 
 module module_lightning
 
-   use kinds, only: r_kind, r_single, i_short, rmissing
+   use kinds2, only: r_kind, r_single, i_short, rmissing
    use module_lightning_base, only: lightningbase
    use module_map_utils, only: map_util
    use module_ncio, only: ncio

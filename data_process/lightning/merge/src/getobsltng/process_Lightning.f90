@@ -14,7 +14,7 @@
 program process_Lightning
 
    use module_map_utils, only: map_util
-   use kinds, only: r_kind, i_kind, r_single
+   use kinds2, only: r_kind, i_kind, r_single
    use module_ncio, only: ncio
    use module_lightning, only: obs_lightning
 

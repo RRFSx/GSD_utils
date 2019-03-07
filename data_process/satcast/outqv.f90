@@ -52,10 +52,8 @@
            JMin=J
          ENDIF
  100   CONTINUE
-       write (6,120)K,IMAX,JMAX,QVAMAX, &
-           imin,jmin,qvamin
- 120   format ('K=',i3,' I/J/MAXval=',2i4,E13.5, &
-                      ' I/J/MINval=',2i4,E13.5)
+       write (6,120) K,IMAX,JMAX,QVAMAX,imin,jmin,qvamin
+120   format ('K=',i3,' I/J/MAXval=',2i4,E13.5,' I/J/MINval=',2i4, E13.5)
 !      PRINT *,'K,I/J,MAX,I/J,MIN = ',K,IMAX,JMAX,QVAMAX,
 !    1      imin,jmin,qvamin
  200   CONTINUE

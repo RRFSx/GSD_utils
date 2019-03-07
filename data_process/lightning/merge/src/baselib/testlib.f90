@@ -1,6 +1,6 @@
 program testlib
 !
-  use kinds, only: r_kind,r_single,len_sta_name
+  use kinds2, only: r_kind,r_single,len_sta_name
   use module_ncio, only : ncio
   use module_map_utils, only : map_util
   use module_time, only : mtime

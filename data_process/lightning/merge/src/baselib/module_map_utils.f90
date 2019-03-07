@@ -5,7 +5,7 @@
 !
 module module_map_utils
 
-  use kinds, only: i_byte,r_kind,r_single,i_kind
+  use kinds2, only: i_byte,r_kind,r_single,i_kind
   implicit none
 
   public :: map_util

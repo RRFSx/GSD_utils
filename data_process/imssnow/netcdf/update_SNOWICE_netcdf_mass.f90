@@ -1358,6 +1358,7 @@ endif ! 1==2
 end subroutine update_SNOWICE_netcdf_mass
 
 SUBROUTINE wrf_debug( level , str )
+!  USE module_wrf_error
   IMPLICIT NONE
   CHARACTER*(*) str
   INTEGER , INTENT (IN) :: level
