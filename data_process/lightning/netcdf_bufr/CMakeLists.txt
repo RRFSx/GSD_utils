@@ -10,5 +10,5 @@ set_source_files_properties(${CSRC_LIST} PROPERTIES COMPILE_FLAGS ${C_FLAGS})
 set_source_files_properties(process_Lightning.f90 PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS})
 
 ADD_EXECUTABLE(process_Lightning_bufr.exe process_Lightning.f90 ${SRC_LIST} ${CSRC_LIST})
-TARGET_LINK_LIBRARIES(process_Lightning_bufr.exe ${NETCDFLIB} ${LIBBUFR} ${LIBW3EMC} ${LIBW3NCO} ${LIBBACIO} ${GSIBUILD}/src/CMakeFiles/gsilib_shrd.dir/constants.f90.o )
+TARGET_LINK_LIBRARIES(process_Lightning_bufr.exe ${NETCDFLIB} ${LIBBUFR} ${LIBW3EMC_UPP} ${LIBW3NCO_UPP} ${LIBBACIO} ${GSIBUILD}/src/CMakeFiles/gsilib_shrd.dir/constants.f90.o )
 

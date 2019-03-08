@@ -10,7 +10,7 @@ include_directories( ${GSIINC} ${NETCDFINC} )
 set(EXE ${EXEsatcast})
 add_executable(${EXE} ${src_c} ${src_all} )
 #set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
-target_link_libraries( ${EXE} ${NETCDFLIB} ${GSILIB} ${LIBW3EMC} ${LIBW3NCO} ${LIBBACIO} ${LIBBUFR} )
+target_link_libraries( ${EXE} ${NETCDFLIB} ${GSILIB} ${LIBW3EMC_UPP} ${LIBW3NCO_UPP} ${LIBBACIO} ${LIBBUFR} )
 
 
 

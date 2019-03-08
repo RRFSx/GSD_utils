@@ -11,4 +11,4 @@ ADD_LIBRARY (lightningbase ${SRC_LIST})
 TARGET_LINK_LIBRARIES(lightningbase ${LIBBACIO} ${NETCDFLIB})
 
 ADD_EXECUTABLE(process_Lightning.exe process_Lightning.f90)
-TARGET_LINK_LIBRARIES(process_Lightning.exe lightningbase base ncio ${LIBBUFR} ${LIBW3EMC} ${LIBW3NCO} ${LIBBACIO} )
+TARGET_LINK_LIBRARIES(process_Lightning.exe lightningbase base ncio ${LIBBUFR} ${LIBW3EMC_UPP} ${LIBW3NCO_UPP} ${LIBBACIO} )

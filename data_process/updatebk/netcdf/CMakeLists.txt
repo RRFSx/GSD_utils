@@ -8,7 +8,7 @@ include_directories( ${GSIINC} ${NETCDFINC} )
 set(EXE "full_cycle_surface.exe")
 add_executable(${EXE} update_netcdf_mass.f90 update_netcdf_mass_snowT.f90 full_cycle_surface_netcdf_mass.f90)
 set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
-target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${GSILIB} ${LIBW3EMC} ${LIBW3NCO} ${MPILIB} )
+target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${GSILIB} ${LIBW3EMC_UPP} ${LIBW3NCO_UPP} ${MPILIB} )
 
 
 #set(EXE "full_cycle_snow.exe")
