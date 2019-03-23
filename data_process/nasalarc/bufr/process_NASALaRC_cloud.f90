@@ -534,12 +534,20 @@ subroutine read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time, &
            write(*,*) 'ALERT: need to increase maxobs',maxobs, ntb
            ntb = maxobs
          endif
-         lat(ntb)=obs(1,1)
-         lon(ntb)=obs(2,1)
-         phase(ntb)=int(obs(3,1))
-         lwp_iwp(ntb)=obs(7,1)
-         teff(ntb)=obs(6,1)
-         ptop(ntb)=obs(5,1)/100.0 ! pa to hpa
+
+         lwp_iwp(ntb)=99999.0
+         lat(ntb)=99999.0
+         lon(ntb)=99999.0
+         phase(ntb)=99999
+         teff(ntb)=99999.0
+         ptop(ntb)=99999.0
+         if(obs(1,1) < 1.e9) lat(ntb)=real(obs(1,1))
+         if(obs(2,1) < 1.e9) lon(ntb)=real(obs(2,1))
+         if(obs(3,1) < 1.e9) phase(ntb)=int(obs(3,1))
+         if(obs(7,1) < 1.e9) lwp_iwp(ntb)=real(obs(7,1))
+         if(obs(6,1) < 1.e9) teff(ntb)=real(obs(6,1))
+         if(obs(5,1) < 1.e9) ptop(ntb)=real(obs(5,1))/100.0 ! pa to hpa
+
        endif
        endif
        endif   ! east_time, west_time

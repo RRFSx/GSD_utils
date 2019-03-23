@@ -43,7 +43,7 @@ SUBROUTINE read_Lightning2cld(nlon,nlat,numlight,light_in,lightning)
 
   INTEGER(i_kind),intent(in) :: nlon,nlat
   INTEGER(i_kind),intent(in) :: numlight 
-  real(r_kind),intent(in)    :: light_in(3,numlight)
+  real(r_single),intent(in)    :: light_in(3,numlight)
   real(r_single), intent(out):: lightning(nlon,nlat)
 !
 !  local
@@ -58,8 +58,9 @@ SUBROUTINE read_Lightning2cld(nlon,nlat,numlight,light_in,lightning)
 !    write(*,*) 'lat lon values ',i,light_in(ilat1s,i)+0.001_r_kind,light_in(ilon1s,i)+0.001_r_kind
 !  ENDDO
   DO i=1,numlight
-    ii=int(light_in(ilon1s,i)+0.001_r_kind)
-    jj=int(light_in(ilat1s,i)+0.001_r_kind)
+    ii=int(light_in(ilon1s,i)+0.001_r_single)
+    jj=int(light_in(ilat1s,i)+0.001_r_single)
+    
     if( ii < 1 .or. ii > nlon ) write(6,*) 'read_Lightning_cld: ', &
                                 'Error in read in lightning ii:',ii,jj,i
     if( jj < 1 .or. jj > nlat ) write(6,*) 'read_Lightning_cld:', &

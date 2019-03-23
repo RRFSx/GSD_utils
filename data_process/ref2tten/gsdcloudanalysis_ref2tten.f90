@@ -123,8 +123,8 @@ program gsdcloudanalysis_ref2tten
   integer(i_kind)            :: numlight
   integer(i_kind)            :: nlat_lightning
   integer(i_kind)            :: nlon_lightning
-  real(r_kind),allocatable   :: lightning_in(:,:)
-  real(r_kind),allocatable   :: lightning(:,:)
+  real(r_single),allocatable   :: lightning_in(:,:)
+  real(r_single),allocatable   :: lightning(:,:)
 
 !
 ! ===============================================================================
@@ -134,6 +134,7 @@ program gsdcloudanalysis_ref2tten
   call MPI_COMM_SIZE(mpi_comm_world,npe,ierror)
   call MPI_COMM_RANK(mpi_comm_world,mype,ierror)
 
+!  mype=0
   write(*,*) mype, 'deal with tten'
   mypeLocal=mype+1
 
@@ -280,19 +281,19 @@ program gsdcloudanalysis_ref2tten
      open(iunit_lightning,file=trim(lightningfile),form='unformatted',status='old',err=47)
         read(iunit_lightning) header1,nlon_lightning,nlat_lightning,numlight,header2,header3
         allocate(lightning_in(3,numlight))
-        lightning_in=-9999.0_r_kind
+        lightning_in=-9999.0_r_single
         read(iunit_lightning) lightning_in
      close(iunit_lightning)
      write(*,*) 'finished read ',trim(lightningfile), numlight
      allocate(lightning(nlon_regional,nlat_regional))
-     lightning=-9999.0_r_kind
+     lightning=-9999.0_r_single
      call read_Lightning2cld(nlon_regional,nlat_regional,numlight,lightning_in,lightning)
      deallocate(lightning_in)
      goto 48
 ! 08 AUG 2017 EJ: Add a graceful handling of missing radar data
 47   write(*,*) 'WARNING: LIGHTNING FILE MISSING:', lightningfile
      allocate(lightning(nlon_regional,nlat_regional))
-     lightning=-9999.0_r_kind
+     lightning=-9999.0_r_single
 !
 !  Read in SATCAST data on analysis grid from binary file
 !

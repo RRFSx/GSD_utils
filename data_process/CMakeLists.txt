@@ -24,9 +24,9 @@ if(HOST-Cheyenne)
   SET(GSIBUILD  "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/GSD_GSI/build")
   set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
   set(wrfframe "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/rapid-refresh/WRFV3.9/frame/pack_utils.o")
-  set(WPSBUILD "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/rapid-refresh/WPSV3.9")
+  set(WPSBUILD "/gpfs/fs1/p/ral/jntp/mhu/wrf/WPSV3.9.0.01")
   ### MPI_FORTRAN_LIBRARIES
-  SET(MPILIB  "/glade/u/apps/ch/os/usr/lib64/libpthread.so;/opt/sgi/mpt/mpt-2.15/lib/libmpi.so")
+  SET(MPILIB  "/gpfs/u/apps/ch/opt/mpt/2.19/opt/hpe/hpc/mpt/mpt-2.19/lib/libxmpi.so")
   ### BLAS_iomp5_LIBRARY
   SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so")
 elseif(HOST-Jet)
