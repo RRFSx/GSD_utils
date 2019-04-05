@@ -28,7 +28,10 @@ Program EncodeRW_DPQC
      do
         read(12,*,end=100)
         nfile=nfile+1
-        if(nfile > 1000) exit
+        if(nfile > 1000000) then
+          write(*,*) 'Error, too many files, double check!!!'
+          stop 345
+        endif
      enddo
 100  continue
      if(nfile > 0) then

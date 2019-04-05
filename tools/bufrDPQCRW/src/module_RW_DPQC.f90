@@ -26,6 +26,7 @@ module module_RW_DPQC
      integer :: iyy,imm,idd,ihh,imin,iss
      integer :: ivdd,ivhh,ivmin
      character(len=4)  :: radarvName
+     character(len=20)  :: datatype 
      real    :: rvcp_value
      real    :: rUnambiguous_Range
      real    :: GateWidth
@@ -141,7 +142,7 @@ module module_RW_DPQC
            enddo
         elseif( ivcp == 31 .or. ivcp == 32 ) then
            do i=1,5
-              if(abs(VCP31(i)-elevation) < 0.02) id=i
+              if(abs(VCP31(i)-elevation) < 0.22) id=i
            enddo
         elseif( ivcp == 35 ) then
            do i=1,9
@@ -336,9 +337,12 @@ module module_RW_DPQC
         write(*,*) 'Unambiguous_Range=',Unambiguous_Range,this%rUnambiguous_Range
         call ncrwin%get_att("radarName-value",this%radarName)
         write(*,*) 'radarName       =',this%radarName
+        call ncrwin%get_att("DataType",this%datatype)
+        write(*,*) 'data type       =',this%datatype
 !
-        if(int(this%rvcp_value) == 35 ) ifpixel=.true.
-        if(int(this%rvcp_value) == 212) ifpixel=.true.
+!        if(int(this%rvcp_value) == 35 ) ifpixel=.true.
+!        if(int(this%rvcp_value) == 212) ifpixel=.true.
+        if(trim(this%datatype) == "SparseRadialSet") ifpixel=.true.
          
         minutes=this%Time/60
         this%iss=this%Time-minutes*60
@@ -351,28 +355,31 @@ module module_RW_DPQC
         allocate(this%rwAzimuth(this%Azimuth))
         allocate(this%NyquistV(this%Azimuth))
         allocate(this%rw2d(this%Gate,this%Azimuth))
+        this%rw2d=999.0
 
         if(ifpixel) then
            call ncrwin%get_dim("pixel",this%pixel)
            write(*,*) 'pixel=',this%pixel
-           allocate(pixel_x(this%pixel))
-           allocate(pixel_y(this%pixel))
-           allocate(pixel_count(this%pixel))
-           call ncrwin%get_var("pixel_x",this%pixel,pixel_x)
-           call ncrwin%get_var("pixel_y",this%pixel,pixel_y)
-           call ncrwin%get_var("pixel_count",this%pixel,pixel_count)
-           allocate(rw1d(this%pixel))
-           call ncrwin%get_var("AliasedVelocityDPQC",this%pixel,rw1d)
-           this%rw2d=-999.0
-           do i=1,this%pixel
-              ii=max(1,min(pixel_y(i)+1,this%Gate))
-              jj=max(1,min(pixel_x(i)+1,this%Azimuth))
-              this%rw2d(ii,jj)=rw1d(i)
-           enddo
-           deallocate(pixel_x)
-           deallocate(pixel_y)
-           deallocate(pixel_count)
-           deallocate(rw1d)
+           if(this%pixel > 0) then
+              allocate(pixel_x(this%pixel))
+              allocate(pixel_y(this%pixel))
+              allocate(pixel_count(this%pixel))
+              call ncrwin%get_var("pixel_x",this%pixel,pixel_x)
+              call ncrwin%get_var("pixel_y",this%pixel,pixel_y)
+              call ncrwin%get_var("pixel_count",this%pixel,pixel_count)
+              allocate(rw1d(this%pixel))
+              call ncrwin%get_var("AliasedVelocityDPQC",this%pixel,rw1d)
+              this%rw2d=-999.0
+              do i=1,this%pixel
+                 ii=max(1,min(pixel_y(i)+1,this%Gate))
+                 jj=max(1,min(pixel_x(i)+1,this%Azimuth))
+                 this%rw2d(ii,jj)=rw1d(i)
+              enddo
+              deallocate(pixel_x)
+              deallocate(pixel_y)
+              deallocate(pixel_count)
+              deallocate(rw1d)
+           endif
         else
            call ncrwin%get_var("AliasedVelocityDPQC",this%Gate,this%Azimuth,this%rw2d)
         endif
