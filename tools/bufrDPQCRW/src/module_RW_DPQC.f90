@@ -53,25 +53,52 @@ module module_RW_DPQC
         class(rw_dpqc),intent(in) :: this
         integer :: id
 
+        real :: VCP11(7)
         real :: VCP12(14)
+        real :: VCP21(9)
+        real :: VCP221(9)
         real :: VCP212(14)
         real :: VCP215(15)
         real :: VCP121(9)
         real :: VCP35(9)
         real :: VCP31(5)
-        real :: VCP32(5)
+        real :: VCP32(6)
 !
         integer :: ivcp
         integer :: i
         real    :: elevation 
 !
+        VCP11(1)  = 0.5
+        VCP11(2)  = 1.45
+        VCP11(3)  = 2.4
+        VCP11(4)  = 3.35
+        VCP11(5)  = 4.30
+        VCP11(6)  = 5.25
+        VCP11(7)  = 6.2
 !
+        VCP221(1) = 0.5
+        VCP221(2) = 1.45
+        VCP221(3) = 2.4
+        VCP221(4) = 3.4
+        VCP221(5) = 4.3
+        VCP221(6) = 6.0
+        VCP221(7) = 9.9
+        VCP221(8) = 14.6
+        VCP221(9) = 19.5
+        VCP21=VCP221
+
         VCP31(1) = 0.5
         VCP31(2) = 1.5
         VCP31(3) = 2.4
         VCP31(4) = 3.4
         VCP31(5) = 4.3
-        VCP32=VCP31 
+
+        VCP32(1) = 0.2
+        VCP32(2) = 0.5
+        VCP32(3) = 1.5
+        VCP32(4) = 2.4
+        VCP32(5) = 3.4
+        VCP32(6) = 4.3
 !
         VCP35(1)=0.5
         VCP35(2)=0.9
@@ -134,19 +161,38 @@ module module_RW_DPQC
            enddo
         elseif( ivcp == 121 ) then
            do i=1,9
-              if(abs(VCP121(i)-elevation) < 0.02) id=i
+              if(abs(VCP121(i)-elevation) < 0.22) id=i
            enddo
         elseif( ivcp == 215 ) then
            do i=1,15
               if(abs(VCP215(i)-elevation) < 0.02) id=i
            enddo
-        elseif( ivcp == 31 .or. ivcp == 32 ) then
+        elseif( ivcp == 31 ) then
            do i=1,5
               if(abs(VCP31(i)-elevation) < 0.22) id=i
            enddo
+        elseif( ivcp == 32 ) then
+           do i=1,2
+              if(abs(VCP32(i)-elevation) < 0.12) id=i
+           enddo
+           do i=3,6
+              if(abs(VCP32(i)-elevation) < 0.22) id=i
+           enddo
+        elseif( ivcp == 21 ) then
+           do i=1,9
+              if(abs(VCP21(i)-elevation) < 0.22) id=i
+           enddo
+        elseif( ivcp == 221 ) then
+           do i=1,9
+              if(abs(VCP221(i)-elevation) < 0.22) id=i
+           enddo
         elseif( ivcp == 35 ) then
            do i=1,9
-              if(abs(VCP35(i)-elevation) < 0.02) id=i
+              if(abs(VCP35(i)-elevation) < 0.12) id=i
+           enddo
+        elseif( ivcp == 11 ) then
+           do i=1,7
+              if(abs(VCP11(i)-elevation) < 0.22) id=i
            enddo
         else
            write(*,*) "error, not a VCP we know"

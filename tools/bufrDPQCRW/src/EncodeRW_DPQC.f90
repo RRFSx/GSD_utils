@@ -47,7 +47,7 @@ Program EncodeRW_DPQC
   do i=1,nfile
 
      crwfile=trim(filelist(i))
-     write(*,'(a,I3,a)') "processing ",i,trim(crwfile)
+     write(*,'(a,I5,2x,a)') "processing ",i,trim(crwfile)
 
      call rwdpqc%readnc(trim(crwfile))
      call rwdpqc%wrtbufr(trim(wrtfile),rscf)
