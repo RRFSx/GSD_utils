@@ -5,14 +5,20 @@ Program EncodeRW_DPQC
 !
   use mpi
   use module_RW_DPQC, only : rw_dpqc
+  use module_RW_dealiasing, only : rw_dealiasing
+  use module_background, only : background
   use module_radar_station_config, only : rdrsta_config
+  use module_map_utils, only : map_util
 
   implicit none
 
 !  MPI variables
   integer :: npe, mype, mypeLocal,ierror
 
-  type(rw_dpqc) :: rwdpqc
+  type(rw_dpqc)       :: rwdpqc
+  type(rw_dealiasing) :: rwdealis
+  type(background)    :: bkgd
+  type(map_util)      :: map
   type(rdrsta_config) :: rscf
 
   integer :: nfile
@@ -20,9 +26,12 @@ Program EncodeRW_DPQC
   character(len=180) :: crwfile
   character(len=180) :: wrtfile
   character(len=180) :: logfile
+  character(len=180) :: bkfile
 
   integer, allocatable :: filelistbin(:)
   integer :: i,n, fileliststart,logout
+!
+  logical :: if_dealiasing
 !
 
 !  MPI setup
@@ -30,6 +39,17 @@ Program EncodeRW_DPQC
   call MPI_COMM_SIZE(mpi_comm_world,npe,ierror)
   call MPI_COMM_RANK(mpi_comm_world,mype,ierror)
 
+  if_dealiasing=.false.
+!
+!  prepare background
+  bkfile='wrfinput_d01'
+
+  if(if_dealiasing) then
+     call bkgd%initialmap(trim(bkfile),map)
+     call bkgd%initial(trim(bkfile))
+  endif
+!
+!
   call rscf%readcf("radar_station_list.txt")
 !
   write(wrtfile,'(a,I3.3)') 'sub_l2rwbufr_nssl_',mype+1
@@ -93,6 +113,11 @@ Program EncodeRW_DPQC
         write(logout,'(a,I5,2x,a)') "processing ",i,trim(crwfile)
 
         call rwdpqc%readnc(trim(crwfile))
+        if(if_dealiasing) then
+           call rwdealis%initial(rwdpqc)
+           call rwdealis%cal_bkrw(rwdpqc,bkgd,map)
+           call rwdealis%destroy()
+        endif
         call rwdpqc%wrtbufr(trim(wrtfile),rscf)
         call rwdpqc%destroy()
 
@@ -103,7 +128,12 @@ Program EncodeRW_DPQC
 
   deallocate(filelist)
   deallocate(filelistbin)
+
   call rscf%destroy()
+  if(if_dealiasing) then
+     call bkgd%destroy()
+     call map%destory_general_transform()
+  endif
 
   call MPI_FINALIZE(ierror)
 

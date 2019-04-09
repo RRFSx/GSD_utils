@@ -34,7 +34,6 @@ module module_RW_DPQC
      real, allocatable :: rwAzimuth(:)
      real, allocatable :: NyquistV(:)
      real, allocatable :: rw2d(:,:)
-     real, allocatable :: rw1d(:)
 
      integer :: pixel
   contains
@@ -53,21 +52,40 @@ module module_RW_DPQC
         class(rw_dpqc),intent(in) :: this
         integer :: id
 
-        real :: VCP11(7)
+        real :: VCP11(14)
         real :: VCP12(14)
         real :: VCP21(9)
         real :: VCP221(9)
         real :: VCP212(14)
         real :: VCP215(15)
         real :: VCP121(9)
-        real :: VCP35(9)
+        real :: VCP117(14)
+        real :: VCP211(14)
         real :: VCP31(5)
         real :: VCP32(6)
+        real :: VCP35(9)
 !
         integer :: ivcp
         integer :: i
         real    :: elevation 
 !
+        VCP117(1) = 0.5
+        VCP117(2) = 1.45
+        VCP117(3) = 2.40
+        VCP117(4) = 3.35
+        VCP117(5) = 4.30
+        VCP117(6) = 5.25
+        VCP117(7) = 6.20
+        VCP117(8) = 7.50
+        VCP117(9) = 8.70
+        VCP117(10) = 10.00
+        VCP117(11) = 12.00
+        VCP117(12) = 14.00
+        VCP117(13) = 16.70
+        VCP117(14) = 19.50
+
+        VCP211=VCP117
+
         VCP11(1)  = 0.5
         VCP11(2)  = 1.45
         VCP11(3)  = 2.4
@@ -75,6 +93,13 @@ module module_RW_DPQC
         VCP11(5)  = 4.30
         VCP11(6)  = 5.25
         VCP11(7)  = 6.2
+        VCP11(8)  = 7.5
+        VCP11(9)  = 8.7
+        VCP11(10)  = 10.0
+        VCP11(11)  = 12.0
+        VCP11(12)  = 14.0
+        VCP11(13)  = 16.7
+        VCP11(14)  = 19.5
 !
         VCP221(1) = 0.5
         VCP221(2) = 1.45
@@ -191,8 +216,16 @@ module module_RW_DPQC
               if(abs(VCP35(i)-elevation) < 0.12) id=i
            enddo
         elseif( ivcp == 11 ) then
-           do i=1,7
+           do i=1,14
               if(abs(VCP11(i)-elevation) < 0.22) id=i
+           enddo
+        elseif( ivcp == 117 ) then
+           do i=1,14
+              if(abs(VCP117(i)-elevation) < 0.22) id=i
+           enddo
+        elseif( ivcp == 211 ) then
+           do i=1,14
+              if(abs(VCP211(i)-elevation) < 0.22) id=i
            enddo
         else
            write(*,*) "error, not a VCP we know"
