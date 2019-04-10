@@ -26,23 +26,31 @@ Program EncodeRW_DPQC
   character(len=180) :: crwfile
   character(len=180) :: wrtfile
   character(len=180) :: logfile
-  character(len=180) :: bkfile
 
   integer, allocatable :: filelistbin(:)
   integer :: i,n, fileliststart,logout
 !
   logical :: if_dealiasing
+  character(len=180) :: bkfile
+  namelist /setup/ if_dealiasing, bkfile
+  logical :: ifexist
 !
-
 !  MPI setup
   call MPI_INIT(ierror)
   call MPI_COMM_SIZE(mpi_comm_world,npe,ierror)
   call MPI_COMM_RANK(mpi_comm_world,mype,ierror)
-
-  if_dealiasing=.false.
 !
-!  prepare background
+! setup dealiasing options
+!
+  if_dealiasing=.false.
   bkfile='wrfinput_d01'
+  inquire(file="namelist.input",exist=ifexist)
+  if(ifexist) then
+     open(10,file="namelist.input")
+        read(10,setup)
+     close(10)
+     write(*,setup)
+  endif
 
   if(if_dealiasing) then
      call bkgd%initialmap(trim(bkfile),map)

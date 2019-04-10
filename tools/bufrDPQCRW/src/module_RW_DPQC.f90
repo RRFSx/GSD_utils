@@ -41,10 +41,49 @@ module module_RW_DPQC
      procedure ::  wrtbufr => write_rw2bufr
      procedure ::  scanid  => get_scan_id
      procedure ::  destroy => destroy_rw_dpqc
+     procedure ::  list    => list_rw_dpqc
   end type rw_dpqc
 
 
   contains
+
+     subroutine list_rw_dpqc(this)
+!
+!  list content 
+!
+
+        implicit none
+
+        class(rw_dpqc),intent(in) :: this
+!
+        integer :: i
+!
+
+        write(*,*) '===== check DPQC variables for this tilt==========='
+        write(*,*) 'Azimuth,Gate    =',this%Azimuth,this%Gate
+        write(*,*) 'Elevation(deg)  =',this%Elevation
+        write(*,*) 'RangeToFirstGate=',this%RangeToFirstGate
+        write(*,*) 'Latitude        =',this%Latitude
+        write(*,*) 'Longitude       =',this%Longitude
+        write(*,*) 'Height          =',this%Height
+        write(*,*) 'Time            =',this%Time
+        write(*,*) 'iyy,imm,idd,ihh,imin,iss =',this%iyy,this%imm,this%idd,this%ihh,this%imin,this%iss
+        write(*,*) 'ivdd,ivhh,ivmin =',this%ivdd,this%ivhh,this%ivmin
+        write(*,*) 'vcp_value       =',this%rvcp_value
+        write(*,*) 'Unambiguous_Range=',this%rUnambiguous_Range
+        write(*,*) 'radarName       =',this%radarName
+        write(*,*) 'data type       =',this%datatype
+        write(*,*) 'GateWidth       =',this%GateWidth
+        write(*,*) 'radarvName      =',this%radarvName
+        do i=1,this%Azimuth
+           write(*,'(I5,a,F10.3,a,f10.3,a,2f10.3)') i, &
+                            '  rwAzimuth=',this%rwAzimuth(i),&
+                            '  NyquistV=',this%NyquistV(i),&
+                            '  rw2d(max,min)=',maxval(this%rw2d(:,i)),minval(this%rw2d(:,i))
+        enddo
+
+     end subroutine list_rw_dpqc
+!
 
      function get_scan_id(this) result(id)
 ! from elevation and VCP to decide scan id

@@ -7,7 +7,7 @@ module module_RW_dealiasing
   use module_map_utils, only : map_util
 
   implicit none
-  integer, parameter :: r_kind=8
+  integer, parameter :: r_kind=8,r_single=4
 
 !  parameters
   real(r_kind), parameter :: one=1.0_r_kind
@@ -46,24 +46,96 @@ module module_RW_dealiasing
 
   contains
 
+     function binarySearch(nlvl,rlist,key) result(rlocation)
+! binary search
+        implicit none 
+
+        integer,        intent(in) :: nlvl
+        real(r_single), intent(in) :: rlist(nlvl)
+        real(r_single), intent(in) :: key
+
+        real(r_single) :: rlocation
+
+        integer :: low, high, mid  
+        integer :: i
+        
+        rlocation=-1.0
+
+        low=1
+        high=nlvl
+
+        if(key <= rlist(low)) then 
+           rlocation=1.0
+        elseif(key >= rlist(high)) then
+           rlocation=nlvl
+        else
+           i=0
+           do while (high >= low)
+
+              mid = (low + high) / 2
+
+              i=i+1
+              if(i > nlvl) then
+                 write(*,*) 'something wrong in binarySearch=',i
+                 stop 23456
+              endif
+   
+              if (key < rlist(mid)) then       
+                 high = mid
+              else if (key >= rlist(mid+1)) then
+                 low = mid+1
+              else
+                 if(key >= rlist(mid) .and. key < rlist(mid+1) ) then               
+                    rlocation=mid+(key-rlist(mid))/(rlist(mid+1)-rlist(mid))
+!                    write(*,*) rlocation,mid,key,rlist(mid),rlist(mid+1)
+                    exit
+                 else
+                    write(*,*) 'something wrong in binarySearch',mid,key
+                    stop 12345
+                 endif
+              endif
+           enddo
+        endif
+
+  end function 
+
   subroutine calculate_background_rw(this,rwdpqc,bkgd,map)
 !
 !  calculate background RW
 !
         class(rw_dealiasing),intent(inout) :: this
         type(rw_dpqc), intent(in)          :: rwdpqc
-        type(background), intent(in)       :: bkgd
+        type(background), intent(inout)       :: bkgd
         type(map_util),intent(inout)       :: map
 
         real(r_kind) :: thisrange,thisazimuth,thistilt
-        integer :: i,iaz
+        integer :: nz,k,i,iaz
+        real(r_single) :: xc,yc,rval,rlocation
+        real(r_single),allocatable :: rvalv(:)
+        character(len=10) :: varname
+!
+! check background
+!        call bkgd%listflds()
+!        varname="U"
+!        call bkgd%listfld(trim(varname))
+!        call bkgd%listfld('V')
+!        call bkgd%listfld('W')
+!        call bkgd%listfld('H')
+!        call bkgd%listfld('terrain')
+! check rw observations
+!        call rwdpqc%list() 
 !
 !
-        write(*,*) rwdpqc%Elevation,rwdpqc%RangeToFirstGate
-        write(*,*) rwdpqc%Latitude,rwdpqc%Longitude,rwdpqc%Height
-        write(*,*) rwdpqc%rUnambiguous_Range
-        write(*,*) rwdpqc%GateWidth
-        write(*,*) rwdpqc%radarName
+        nz=bkgd%nz
+        allocate(rvalv(nz))
+
+!        call bkgd%interp2d('V',10,10.5,10.5,rval)
+!        write(*,*) rval
+!        call bkgd%interp2dv('V',nz,10.5,10.5,rvalv)
+!        do k=1,nz
+!           write(*,*) k,rvalv(k)
+!        enddo
+!
         this%stalat=rwdpqc%Latitude
         this%stalon=rwdpqc%Longitude
         this%stahgt=rwdpqc%Height
@@ -75,19 +147,31 @@ module module_RW_dealiasing
            do i=1,this%Gate
               if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
                  thisrange=rwdpqc%RangeToFirstGate+rwdpqc%GateWidth*(i-1)
-!                 write(*,*) '=======>',i,iaz,this%rw2d(i,iaz),rwdpqc%rw2d(i,iaz)
-
                  call this%location(thisrange,thistilt,thisazimuth)
-
 !                 write(*,'(a,5f12.5)') 'observation height=',this%rwheight,this%stahgt,thisrange
 !                 write(*,'(a,5f12.5)') 'corrected_tilt=',this%rwtilt,thistilt
 !                 write(*,'(a,5f12.5)') 'rw obs latlon =',this%rwlat,this%rwlon,this%stalat,this%stalon
 !                 write(*,'(a,5f12.5)') 'corrected_azimuth=',this%rwAzimuth,thisazimuth
-
+!  find location in grid coordiante
+                 call map%tll2xy(this%rwlon, this%rwlat,xc,yc)
+                 if((xc >=1 .and. xc <=map%nlon) .and. &
+                    (yc >=1 .and. yc <=map%nlat)) then
+!                    write(*,*) 'get bk Vr here: xc=',xc,' yx=',yc,' height=',this%rwheight
+                    call bkgd%interp2dv('H',nz,xc,yc,rvalv)
+                    rlocation=binarySearch(nz,rvalv,this%rwheight)
+                    kk=int(rlocation)
+                    this%rw2d(i,iaz)=0.0
+                 else
+                    this%rw2d(i,iaz)=-999.0
+                 endif
+                 write(*,*) '=======>',i,iaz,this%rw2d(i,iaz),rwdpqc%rw2d(i,iaz)
+!
               endif
            enddo
         enddo
-
+!
+        deallocate(rvalv)
+!
   end subroutine calculate_background_rw
 !
   subroutine get_rw_location(this,thisrange,thistilt,thisazimuth)
