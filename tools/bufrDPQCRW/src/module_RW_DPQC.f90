@@ -511,7 +511,12 @@ module module_RW_DPQC
         call ncrwin%get_var("Azimuth",this%Azimuth,this%rwAzimuth)
         call ncrwin%get_var("NyquistVelocity",this%Azimuth,this%NyquistV)
         call ncrwin%close()
- 
+! conver azimuth from true north to regular angle
+        do i=1,this%Azimuth
+           this%rwAzimuth(i)=360.0+90.0-this%rwAzimuth(i)
+           if(this%rwAzimuth(i) > 360.0) this%rwAzimuth(i)=this%rwAzimuth(i)-360.0
+        enddo
+! 
         if(this%scanid()==1 .or. this%radarvName /= this%radarName) then
            this%ivdd=this%idd 
            this%ivhh=this%ihh 

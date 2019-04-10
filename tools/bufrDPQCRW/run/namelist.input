@@ -1,0 +1,5 @@
+&setup
+  if_dealiasing=.true.,
+  if_save_bkrw=.true.,
+  bkfile="wrfinput_d01",
+/

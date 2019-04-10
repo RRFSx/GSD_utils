@@ -30,6 +30,7 @@ module module_RW_dealiasing
      integer :: Azimuth,Gate
      real :: rwAzimuth,rwtilt,rwheight
      real :: rwlon,rwlat
+     logical :: include_w
      real, allocatable :: rw2d(:,:)
 
      real(r_kind) :: stalon
@@ -38,6 +39,7 @@ module module_RW_dealiasing
 
   contains
      procedure ::  cal_bkrw  => calculate_background_rw
+     procedure ::  dealiasing_bkrw => dealiasing_with_bkrw
      procedure ::  location  => get_rw_location
      procedure ::  initial   => initial_rw_dealiasing
      procedure ::  destroy   => destroy_rw_dealiasing
@@ -99,6 +101,25 @@ module module_RW_dealiasing
 
   end function 
 
+  subroutine dealiasing_with_bkrw(this,rwdpqc)
+!
+!  dealiasinng based on background RW
+!
+        class(rw_dealiasing),intent(inout) :: this
+        type(rw_dpqc), intent(inout)          :: rwdpqc
+
+        integer :: i,iaz
+!
+        do iaz=1,this%Azimuth
+           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
+           do i=1,this%Gate
+              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
+                 if(abs(this%rw2d(i,iaz)) < 500.0) rwdpqc%rw2d(i,iaz)=this%rw2d(i,iaz)
+              endif
+           enddo
+        enddo
+  end subroutine dealiasing_with_bkrw
+
   subroutine calculate_background_rw(this,rwdpqc,bkgd,map)
 !
 !  calculate background RW
@@ -109,10 +130,20 @@ module module_RW_dealiasing
         type(map_util),intent(inout)       :: map
 
         real(r_kind) :: thisrange,thisazimuth,thistilt
-        integer :: nz,k,i,iaz
-        real(r_single) :: xc,yc,rval,rlocation
+        integer :: nz,k,i,iaz,kk
+        real(r_single) :: xc,yc,rval,rlocation,dk
         real(r_single),allocatable :: rvalv(:)
         character(len=10) :: varname
+!
+        real(r_single) :: uges,vges,wges,ugesup,vgesup,wgesup
+!
+! temp variables for rwwind calculation
+        real(r_single) :: dlat_earth_deg,dlon_earth_deg,dlat_earth,dlon_earth
+        real(r_single) :: azm_earth,cosazm_earth,sinazm_earth
+        real(r_single) :: azm, sinazm,cosazm
+        real(r_single) :: tiltangle
+        real(r_single) :: costilt,sintilt,cosazm_costilt,sinazm_costilt
+        real(r_single) :: rwwind
 !
 ! check background
 !        call bkgd%listflds()
@@ -141,11 +172,12 @@ module module_RW_dealiasing
         this%stahgt=rwdpqc%Height
         thistilt=rwdpqc%Elevation
 !
+!        do iaz=1,2
         do iaz=1,this%Azimuth
 !           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
            thisazimuth=rwdpqc%rwAzimuth(iaz)
            do i=1,this%Gate
-              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
+!for test              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
                  thisrange=rwdpqc%RangeToFirstGate+rwdpqc%GateWidth*(i-1)
                  call this%location(thisrange,thistilt,thisazimuth)
 !                 write(*,'(a,5f12.5)') 'observation height=',this%rwheight,this%stahgt,thisrange
@@ -160,13 +192,63 @@ module module_RW_dealiasing
                     call bkgd%interp2dv('H',nz,xc,yc,rvalv)
                     rlocation=binarySearch(nz,rvalv,this%rwheight)
                     kk=int(rlocation)
-                    this%rw2d(i,iaz)=0.0
+                    dk=rlocation-float(kk)
+                    if(kk==nz) kk=kk-1
+                    if(kk >=1 .and. kk < nz) then
+                       call bkgd%interp2d('U',kk,  xc,yc,uges)
+                       call bkgd%interp2d('U',kk+1,xc,yc,ugesup)
+                       call bkgd%interp2d('V',kk,  xc,yc,vges)
+                       call bkgd%interp2d('V',kk+1,xc,yc,vgesup)
+                       call bkgd%interp2d('W',kk,  xc,yc,wges)
+                       call bkgd%interp2d('W',kk+1,xc,yc,wgesup)
+!                       write(*,*) uges,ugesup,vges,vgesup,wges,wgesup
+! get u v w at observation RW point
+                       uges= uges*(1.0-dk) + ugesup*dk
+                       vges= vges*(1.0-dk) + vgesup*dk
+                       wges= wges*(1.0-dk) + wgesup*dk
+!                       write(*,*) '1=',uges,vges,wges,dk,rlocation
+!                       write(*,*) '2=',this%rwlat,this%rwlon,this%rwAzimuth,this%rwtilt
+! calculate RW
+                       dlon_earth_deg = this%rwlon
+                       if(dlon_earth_deg < 0.0_r_single  ) dlon_earth_deg=dlon_earth_deg+360.0
+                       if(dlon_earth_deg > 360.0_r_single) dlon_earth_deg=dlon_earth_deg-360.0
+                       azm_earth = this%rwAzimuth
+!                       azm_earth = 360.0_r_single+(90.0_r_single - this%rwAzimuth)
+!                       if(azm_earth < 0.0_r_single  ) azm_earth=azm_earth+360.0
+!                       if(azm_earth > 360.0_r_single) azm_earth=azm_earth-360.0
+                       cosazm_earth=cos(azm_earth*deg2rad)
+                       sinazm_earth=sin(azm_earth*deg2rad)
+                       call map%rotate_wind_ll2xy(cosazm_earth,sinazm_earth,cosazm,sinazm,dlon_earth_deg,xc,yc)
+                       azm=atan2(sinazm,cosazm)*rad2deg
+
+                       azm=azm*deg2rad
+                       tiltangle=this%rwtilt*deg2rad
+
+                       cosazm  = cos(azm)  ! cos(azimuth angle)
+                       sinazm  = sin(azm)  ! sin(azimuth angle)
+                       costilt = cos(tiltangle) ! cos(tilt angle)
+                       sintilt = sin(tiltangle) ! sin(tilt angle)
+                       cosazm_costilt = cosazm*costilt
+                       sinazm_costilt = sinazm*costilt
+
+                       rwwind=uges*cosazm_costilt+vges*sinazm_costilt
+                       if(this%include_w) then
+                          rwwind=rwwind+wges*sintilt
+                       end if
+
+                       this%rw2d(i,iaz)=rwwind
+                    else
+                       write(*,*) 'WARNING: may have problem with rlocation:', rlocation
+                       this%rw2d(i,iaz)=-999.0
+                    endif
                  else
                     this%rw2d(i,iaz)=-999.0
                  endif
-                 write(*,*) '=======>',i,iaz,this%rw2d(i,iaz),rwdpqc%rw2d(i,iaz)
+!                 write(*,*) '=======>',i,iaz,this%rw2d(i,iaz),rwdpqc%rw2d(i,iaz)
+! check the results 
+!                 rwdpqc%rw2d(i,iaz)=this%rw2d(i,iaz)
 !
-              endif
+! for test              endif
            enddo
         enddo
 !
@@ -283,6 +365,7 @@ module module_RW_dealiasing
         this%rwlat=0.0
         this%rwheight=0.0
         this%rwtilt=0
+        this%include_w=.false.
         if(allocated(this%rw2d)) deallocate(this%rw2d)
         allocate(this%rw2d(this%Gate,this%Azimuth))
         this%rw2d=99999.0

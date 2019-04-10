@@ -25,14 +25,17 @@ Program EncodeRW_DPQC
   character(len=180),allocatable :: filelist(:)
   character(len=180) :: crwfile
   character(len=180) :: wrtfile
+  character(len=180) :: wrtfile_bkrw
+  character(len=180) :: wrtfile_dealiasing
   character(len=180) :: logfile
 
   integer, allocatable :: filelistbin(:)
   integer :: i,n, fileliststart,logout
 !
   logical :: if_dealiasing
+  logical :: if_save_bkrw
   character(len=180) :: bkfile
-  namelist /setup/ if_dealiasing, bkfile
+  namelist /setup/ if_dealiasing, if_save_bkrw, bkfile
   logical :: ifexist
 !
 !  MPI setup
@@ -43,6 +46,7 @@ Program EncodeRW_DPQC
 ! setup dealiasing options
 !
   if_dealiasing=.false.
+  if_save_bkrw=.false.
   bkfile='wrfinput_d01'
   inquire(file="namelist.input",exist=ifexist)
   if(ifexist) then
@@ -61,6 +65,8 @@ Program EncodeRW_DPQC
   call rscf%readcf("radar_station_list.txt")
 !
   write(wrtfile,'(a,I3.3)') 'sub_l2rwbufr_nssl_',mype+1
+  write(wrtfile_bkrw,'(a,I3.3)') 'sub_l2rwbufr_nssl_bkrw_',mype+1
+  write(wrtfile_dealiasing,'(a,I3.3)') 'sub_l2rwbufr_nssl_dealiasing_',mype+1
   write(logfile,'(a,I3.3,a)') 'sub_l2rwbufr_nssl_',mype+1,'.log'
   logout=13
 
@@ -121,12 +127,21 @@ Program EncodeRW_DPQC
         write(logout,'(a,I5,2x,a)') "processing ",i,trim(crwfile)
 
         call rwdpqc%readnc(trim(crwfile))
+        call rwdpqc%wrtbufr(trim(wrtfile),rscf)
         if(if_dealiasing) then
            call rwdealis%initial(rwdpqc)
            call rwdealis%cal_bkrw(rwdpqc,bkgd,map)
+
+           call rwdealis%dealiasing_bkrw(rwdpqc)
+           call rwdpqc%wrtbufr(trim(wrtfile_dealiasing),rscf)
+
+           if(if_save_bkrw) then
+              rwdpqc%rw2d=rwdealis%rw2d
+              call rwdpqc%wrtbufr(trim(wrtfile_bkrw),rscf)
+           endif
+
            call rwdealis%destroy()
         endif
-        call rwdpqc%wrtbufr(trim(wrtfile),rscf)
         call rwdpqc%destroy()
 
      enddo
