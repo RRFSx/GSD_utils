@@ -32,6 +32,7 @@ module module_RW_dealiasing
      real :: rwlon,rwlat
      logical :: include_w
      real, allocatable :: rw2d(:,:)
+     real, allocatable :: rw2d_hgt(:,:)
 
      real(r_kind) :: stalon
      real(r_kind) :: stalat
@@ -108,13 +109,43 @@ module module_RW_dealiasing
         class(rw_dealiasing),intent(inout) :: this
         type(rw_dpqc), intent(inout)          :: rwdpqc
 
-        integer :: i,iaz
+        integer :: i,iaz,kk
+        real(r_single) :: v0,vexpected,rw_obs,rkk
+!
+        integer,parameter :: numbgfact=6
+        real(r_single) :: bg_amp_factor(numbgfact)
+        integer :: ibgfact
+!
+! setup background amplify factor based on the height
+        bg_amp_factor(1)=1.8_r_single   ! below 200m
+        bg_amp_factor(2)=1.6_r_single   ! 200-400m
+        bg_amp_factor(3)=1.4_r_single   ! 400-600m
+        bg_amp_factor(4)=1.2_r_single   ! 600-800m
+        bg_amp_factor(5)=1.2_r_single   ! 800-1000m
+        bg_amp_factor(6)=1.0_r_single   ! above 1000m
 !
         do iaz=1,this%Azimuth
            write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
+           v0=2.0_r_single*rwdpqc%NyquistV(iaz)
            do i=1,this%Gate
               if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
-                 if(abs(this%rw2d(i,iaz)) < 500.0) rwdpqc%rw2d(i,iaz)=this%rw2d(i,iaz)
+                 if(abs(this%rw2d(i,iaz)) < 500.0) then
+                    ibgfact=int(this%rw2d_hgt(i,iaz)/200.0) + 1
+                    ibgfact=min(max(ibgfact,1),numbgfact)
+                    vexpected=this%rw2d(i,iaz) * bg_amp_factor(ibgfact)
+                    rw_obs=rwdpqc%rw2d(i,iaz)
+                    rkk=(vexpected-rw_obs)/v0
+                    kk=0
+                    if( rkk > 0.0) kk=int(rkk+0.5)
+                    if( rkk < 0.0) kk=int(rkk-0.5)
+                 !   write(*,*) iaz,i,vexpected,rw_obs,v0,kk
+                    if(abs(kk) > 0) then
+                       rwdpqc%rw2d(i,iaz)=rw_obs + kk*v0
+                       if(abs(kk) > 1) then
+                          write(*,*) "dealiasing=",kk,vexpected,rw_obs,rwdpqc%rw2d(i,iaz)
+                       endif
+                    endif
+                 endif
               endif
            enddo
         enddo
@@ -172,6 +203,7 @@ module module_RW_dealiasing
         this%stahgt=rwdpqc%Height
         thistilt=rwdpqc%Elevation
 !
+        this%rw2d_hgt=-999.0
 !        do iaz=1,2
         do iaz=1,this%Azimuth
 !           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
@@ -180,6 +212,7 @@ module module_RW_dealiasing
 !for test              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
                  thisrange=rwdpqc%RangeToFirstGate+rwdpqc%GateWidth*(i-1)
                  call this%location(thisrange,thistilt,thisazimuth)
+                 this%rw2d_hgt(i,iaz)=this%rwheight
 !                 write(*,'(a,5f12.5)') 'observation height=',this%rwheight,this%stahgt,thisrange
 !                 write(*,'(a,5f12.5)') 'corrected_tilt=',this%rwtilt,thistilt
 !                 write(*,'(a,5f12.5)') 'rw obs latlon =',this%rwlat,this%rwlon,this%stalat,this%stalon
@@ -368,7 +401,10 @@ module module_RW_dealiasing
         this%include_w=.false.
         if(allocated(this%rw2d)) deallocate(this%rw2d)
         allocate(this%rw2d(this%Gate,this%Azimuth))
+        if(allocated(this%rw2d_hgt)) deallocate(this%rw2d_hgt)
+        allocate(this%rw2d_hgt(this%Gate,this%Azimuth))
         this%rw2d=99999.0
+        this%rw2d_hgt=-99999.0
 
      end subroutine initial_rw_dealiasing
 
@@ -388,6 +424,7 @@ module module_RW_dealiasing
         this%rwheight=0.0
         this%rwtilt=0
         if(allocated(this%rw2d)) deallocate(this%rw2d)
+        if(allocated(this%rw2d_hgt)) deallocate(this%rw2d_hgt)
 
      end subroutine destroy_rw_dealiasing
 

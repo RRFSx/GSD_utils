@@ -322,6 +322,9 @@ module module_RW_DPQC
         integer          :: valid_time
         character(len=8) :: subset2
         logical          :: file_exists
+        real             :: azimuth
+        real             :: gatewidth
+        integer          :: istep
 !
 !
 !
@@ -369,15 +372,25 @@ module module_RW_DPQC
         hdr3(3)=this%rvcp_value
         hdr3(4)=this%ivdd*10000+this%ivhh*100+this%ivmin
 !
+        gatewidth=this%GateWidth
+        istep=1
+        if(this%Azimuth==720) istep=2
+!
 ! set the report subtype based on the report hour - see the bufrtab.006  
 ! for the hour windows
 ! 
         subset2(1:6) = 'NC0060'
         WRITE (UNIT=subset2(7:8),FMT='(I2)') this%ihh + 10
-  wrtrw:do iaz=1, this%Azimuth
+  wrtrw:do iaz=1, this%Azimuth,istep
+
 !  wrtrw:do iaz=1, 5
           obs=10.0e+10
-          hdr(7)=this%rwAzimuth(iaz)
+
+! conver azimuth from regular angle to true north
+          azimuth=450.0 - this%rwAzimuth(iaz)
+          if(azimuth > 360.0) azimuth=azimuth-360.0
+          hdr(7)=azimuth
+
           hdr3(2)=this%NyquistV(iaz)
           numrwbin=0
           do i=1,this%Gate
