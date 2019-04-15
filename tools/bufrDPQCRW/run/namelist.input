@@ -1,5 +1,8 @@
 &setup
   if_dealiasing=.true.,
+  if_use_kbrw=.true.,
   if_save_bkrw=.true.,
+  if_use_vad=.true.,
+  if_use_local=.true.,
   bkfile="wrfinput_d01",
 /

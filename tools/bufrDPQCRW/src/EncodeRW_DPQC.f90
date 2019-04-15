@@ -34,8 +34,11 @@ Program EncodeRW_DPQC
 !
   logical :: if_dealiasing
   logical :: if_save_bkrw
+  logical :: if_use_vad 
+  logical :: if_use_kbrw
+  logical :: if_use_local
   character(len=180) :: bkfile
-  namelist /setup/ if_dealiasing, if_save_bkrw, bkfile
+  namelist /setup/ if_dealiasing, if_use_kbrw, if_save_bkrw, if_use_vad, if_use_local,bkfile
   logical :: ifexist
 !
 !  MPI setup
@@ -47,6 +50,9 @@ Program EncodeRW_DPQC
 !
   if_dealiasing=.false.
   if_save_bkrw=.false.
+  if_use_vad=.false.
+  if_use_kbrw=.false.
+  if_use_local=.false.
   bkfile='wrfinput_d01'
   inquire(file="namelist.input",exist=ifexist)
   if(ifexist) then
@@ -130,12 +136,21 @@ Program EncodeRW_DPQC
         call rwdpqc%wrtbufr(trim(wrtfile),rscf)
         if(if_dealiasing) then
            call rwdealis%initial(rwdpqc)
-           call rwdealis%cal_bkrw(rwdpqc,bkgd,map)
+           if(if_use_kbrw) call rwdealis%cal_bkrw(rwdpqc,bkgd,map)
+           if(if_use_kbrw) call rwdealis%dealiasing_bkrw(rwdpqc)
 
-           call rwdealis%dealiasing_bkrw(rwdpqc)
+           if(if_use_vad)  call rwdealis%cal_vad(rwdpqc)
+           if(if_use_vad)  call rwdealis%dealiasing_vad(rwdpqc)
+
+           if(if_use_local) then
+              call rwdealis%dealiasing_localrw(rwdpqc,1)
+              call rwdealis%dealiasing_localrw(rwdpqc,2)
+              call rwdealis%dealiasing_localrw(rwdpqc,3)
+           endif
+
            call rwdpqc%wrtbufr(trim(wrtfile_dealiasing),rscf)
 
-           if(if_save_bkrw) then
+           if(if_use_kbrw .and. if_save_bkrw) then
               rwdpqc%rw2d=rwdealis%rw2d
               call rwdpqc%wrtbufr(trim(wrtfile_bkrw),rscf)
            endif

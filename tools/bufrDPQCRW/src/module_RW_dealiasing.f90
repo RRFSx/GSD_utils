@@ -33,6 +33,7 @@ module module_RW_dealiasing
      logical :: include_w
      real, allocatable :: rw2d(:,:)
      real, allocatable :: rw2d_hgt(:,:)
+     real, allocatable :: vaduu(:),vadvv(:)
 
      real(r_kind) :: stalon
      real(r_kind) :: stalat
@@ -40,7 +41,10 @@ module module_RW_dealiasing
 
   contains
      procedure ::  cal_bkrw  => calculate_background_rw
+     procedure ::  cal_vad   => calculate_VAD
      procedure ::  dealiasing_bkrw => dealiasing_with_bkrw
+     procedure ::  dealiasing_vad  => dealiasing_with_vad
+     procedure ::  dealiasing_localrw  => dealiasing_with_localrw
      procedure ::  location  => get_rw_location
      procedure ::  initial   => initial_rw_dealiasing
      procedure ::  destroy   => destroy_rw_dealiasing
@@ -102,6 +106,206 @@ module module_RW_dealiasing
 
   end function 
 
+  subroutine calculate_VAD(this,rwdpqc)
+!
+!  dealiasinng based on VAD
+!
+   implicit none
+        class(rw_dealiasing),intent(inout) :: this
+        type(rw_dpqc), intent(inout)          :: rwdpqc
+
+!
+! variables for VAD wind calculation
+        integer :: irad, nrad
+        integer :: num_rng, num_ang
+        real(r_single),allocatable :: vel(:,:),aza(:)
+        real(r_single),allocatable :: rng(:)
+        real el, cntmn, tgap, rmsmx, rmissing
+! output
+        real(r_single),allocatable :: uvad(:,:),vvad(:,:)
+        real(r_single),allocatable :: err(:)
+        real(r_single),allocatable :: con(:)
+!misc
+        integer :: i
+        real(r_single) :: aaa
+!
+!
+        nrad=1
+        irad=1
+        num_rng=rwdpqc%Gate
+        num_ang=rwdpqc%Azimuth
+        allocate(vel(num_rng,num_ang),aza(num_ang))
+        allocate(rng(num_rng))
+        allocate(uvad(num_rng,nrad),vvad(num_rng,nrad))
+        allocate(err(num_rng),con(num_rng))
+!
+        do i=1,num_ang
+           aza(i) = 450.0_r_single - rwdpqc%rwAzimuth(i)
+           if(aza(i) > 360.0) aza(i) = aza(i) - 360.0_r_single
+        enddo
+
+        aaa=1.0_r_single/1000.0_r_single
+        do i=1,num_rng
+           rng(i)=(rwdpqc%RangeToFirstGate+rwdpqc%GateWidth*(i-1))*aaa
+        enddo
+
+        el=rwdpqc%Elevation
+        cntmn=90
+        tgap=180
+        rmsmx=50.0_r_single
+        rmissing=-8888.0
+!        write(*,*) aza
+
+        vel=rwdpqc%rw2d
+
+        call vad(vel,aza,el,num_rng,num_ang,rng,cntmn,tgap,rmsmx, &
+                 uvad,vvad,err,con,rmissing,irad,nrad)
+   
+        do i=1,num_rng
+!            if( err(i) > 0.0) then
+!               write(*,'(I5,10f10.2)') i,rng(i),uvad(i,1),vvad(i,1),err(i),con(i)
+!            endif
+            this%vaduu(i)=uvad(i,1)
+            this%vadvv(i)=vvad(i,1)
+        enddo
+!
+        deallocate(vel)
+        deallocate(aza)
+        deallocate(rng)
+        deallocate(uvad)
+        deallocate(vvad)
+        deallocate(err)
+        deallocate(con)
+!
+  end subroutine calculate_VAD
+
+  subroutine dealiasing_with_localrw(this,rwdpqc,nsize)
+!
+!  dealiasinng based on local rw
+!
+        class(rw_dealiasing),intent(inout) :: this
+        type(rw_dpqc), intent(inout)       :: rwdpqc
+        integer, intent(in)                :: nsize
+
+        real(r_single) :: azm, sinazm,cosazm
+        real(r_single) :: tiltangle
+        real(r_single) :: costilt,sintilt,cosazm_costilt,sinazm_costilt
+
+        integer :: i,iaz,kk, numrw,ii,jj
+        real(r_single) :: v0,vexpected,rw_obs,rkk
+        real(r_single) :: sumrw, minsize
+!
+        
+        write(*,*) '====> dealiasing with local rw. The size of local domain is ',nsize
+        minsize=nsize*2*nsize*2*0.8
+
+        do iaz=1,this%Azimuth
+!           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz),rwdpqc%Elevation
+
+           v0=2.0_r_single*rwdpqc%NyquistV(iaz)
+
+           do i=1,this%Gate
+              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
+ 
+                 sumrw=0.0
+                 numrw=0
+                 do jj=max(1,iaz-nsize),min(iaz+nsize,this%Azimuth)
+                    do ii=max(1,i-nsize),  min(i+nsize,this%Gate)
+                       if(abs(rwdpqc%rw2d(ii,jj)) < 500.0) then
+                          sumrw=sumrw + rwdpqc%rw2d(ii,jj)
+                          numrw=numrw+1
+                       endif
+                    enddo
+                 enddo
+                 if(numrw > minsize) then
+                    vexpected=sumrw/float(numrw)
+                 else
+                    vexpected=-999.0
+                 endif
+
+                 if(abs(vexpected) < 888.0 ) then
+                    rw_obs=rwdpqc%rw2d(i,iaz)
+                    rkk=(vexpected-rw_obs)/v0
+                    kk=0
+                    if( rkk > 0.0) kk=int(rkk+0.5)
+                    if( rkk < 0.0) kk=int(rkk-0.5)
+         !           if(i < 20) write(*,*) iaz,i,vexpected,rw_obs,kk
+                    if(abs(kk) > 0) then
+                       rwdpqc%rw2d(i,iaz)=rw_obs + kk*v0
+                       if(abs(kk) > 1) then
+                          write(*,*) "dealiasing=",kk,vexpected,rw_obs,rwdpqc%rw2d(i,iaz)
+                       endif
+                    endif
+                 endif  ! local wind is good
+              endif
+           enddo
+        enddo
+!
+  end subroutine dealiasing_with_localrw
+
+  subroutine dealiasing_with_vad(this,rwdpqc)
+!
+!  dealiasinng based on VAD
+!
+        class(rw_dealiasing),intent(inout) :: this
+        type(rw_dpqc), intent(inout)          :: rwdpqc
+
+        real(r_single) :: azm, sinazm,cosazm
+        real(r_single) :: tiltangle
+        real(r_single) :: costilt,sintilt,cosazm_costilt,sinazm_costilt
+
+        integer :: i,iaz,kk
+        real(r_single) :: v0,vexpected,rw_obs,rkk
+        real(r_single) :: vaduu,vadvv
+!
+        
+        write(*,*) '====> dealiasing with VAD'
+!        do i=1,this%Gate
+!           if( abs(this%vaduu(i)) < 888.0 .and. abs(this%vadvv(i)) < 888.0) then
+!              write(*,'(I5,10f10.2)') i,this%vaduu(i),this%vadvv(i)
+!           endif
+!        enddo
+!
+        tiltangle=rwdpqc%Elevation*deg2rad
+
+        do iaz=1,this%Azimuth
+!           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz),rwdpqc%Elevation
+
+           azm=rwdpqc%rwAzimuth(iaz)*deg2rad
+           cosazm  = cos(azm)  ! cos(azimuth angle)
+           sinazm  = sin(azm)  ! sin(azimuth angle)
+           costilt = cos(tiltangle) ! cos(tilt angle)
+           sintilt = sin(tiltangle) ! sin(tilt angle)
+           cosazm_costilt = cosazm*costilt
+           sinazm_costilt = sinazm*costilt
+
+           v0=2.0_r_single*rwdpqc%NyquistV(iaz)
+
+           do i=1,this%Gate
+              if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
+                 vaduu=this%vaduu(i)
+                 vadvv=this%vadvv(i)
+                 if(abs(vaduu) < 888.0 .and. abs(vadvv) < 888.0) then
+                    vexpected=vaduu*cosazm_costilt+vadvv*sinazm_costilt
+                    rw_obs=rwdpqc%rw2d(i,iaz)
+                    rkk=(vexpected-rw_obs)/v0
+                    kk=0
+                    if( rkk > 0.0) kk=int(rkk+0.5)
+                    if( rkk < 0.0) kk=int(rkk-0.5)
+!                    if(i < 20) write(*,*) iaz,i,vexpected,rw_obs,vaduu,vadvv,v0,kk
+                    if(abs(kk) > 0) then
+                       rwdpqc%rw2d(i,iaz)=rw_obs + kk*v0
+                       if(abs(kk) > 1) then
+                          write(*,*) "dealiasing=",kk,vexpected,rw_obs,rwdpqc%rw2d(i,iaz)
+                       endif
+                    endif
+                 endif  ! VAD wind is good
+              endif
+           enddo
+        enddo
+!
+  end subroutine dealiasing_with_vad
+
   subroutine dealiasing_with_bkrw(this,rwdpqc)
 !
 !  dealiasinng based on background RW
@@ -116,6 +320,7 @@ module module_RW_dealiasing
         real(r_single) :: bg_amp_factor(numbgfact)
         integer :: ibgfact
 !
+        write(*,*) '====> dealiasing with background RW'
 ! setup background amplify factor based on the height
         bg_amp_factor(1)=1.8_r_single   ! below 200m
         bg_amp_factor(2)=1.6_r_single   ! 200-400m
@@ -125,7 +330,7 @@ module module_RW_dealiasing
         bg_amp_factor(6)=1.0_r_single   ! above 1000m
 !
         do iaz=1,this%Azimuth
-           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
+!           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz)
            v0=2.0_r_single*rwdpqc%NyquistV(iaz)
            do i=1,this%Gate
               if(rwdpqc%rw2d(i,iaz) > -500.0 .and. rwdpqc%rw2d(i,iaz) < 500.0) then  ! missing value -99900
@@ -403,8 +608,14 @@ module module_RW_dealiasing
         allocate(this%rw2d(this%Gate,this%Azimuth))
         if(allocated(this%rw2d_hgt)) deallocate(this%rw2d_hgt)
         allocate(this%rw2d_hgt(this%Gate,this%Azimuth))
+        if(allocated(this%vaduu)) deallocate(this%vaduu)
+        allocate(this%vaduu(this%Gate))
+        if(allocated(this%vadvv)) deallocate(this%vadvv)
+        allocate(this%vadvv(this%Gate))
         this%rw2d=99999.0
         this%rw2d_hgt=-99999.0
+        this%vaduu=-99999.0
+        this%vadvv=-99999.0
 
      end subroutine initial_rw_dealiasing
 
@@ -425,6 +636,8 @@ module module_RW_dealiasing
         this%rwtilt=0
         if(allocated(this%rw2d)) deallocate(this%rw2d)
         if(allocated(this%rw2d_hgt)) deallocate(this%rw2d_hgt)
+        if(allocated(this%vaduu)) deallocate(this%vaduu)
+        if(allocated(this%vadvv)) deallocate(this%vadvv)
 
      end subroutine destroy_rw_dealiasing
 
