@@ -23,7 +23,7 @@ module module_nwp
    type :: nwp_type
       character(len=5) :: datatype
       integer :: numvar, xlat, xlon, xtime
-      integer :: i_mask, i_sst, i_ice, i_sfcT
+      integer :: i_mask, i_sst, i_ice, i_sfcT, i_sltyp, i_vgtyp
       character(len=20), allocatable :: varnames(:)
       character(len=20), allocatable :: latname
       character(len=20), allocatable :: lonname
@@ -34,6 +34,8 @@ module module_nwp
       real(r_single), allocatable :: nwp_sst(:,:,:)
       real(r_single), allocatable :: nwp_ice(:,:,:)
       real(r_single), allocatable :: nwp_sfcT(:,:,:)
+      integer, allocatable :: nwp_sltyp(:,:,:)
+      integer, allocatable :: nwp_vgtyp(:,:,:)
    end type nwp_type
 
    type, extends(nwp_type) :: fcst_nwp
@@ -71,6 +73,8 @@ module module_nwp
             this%i_sst = 2
             this%i_ice = 3
             this%i_sfcT = 0
+            this%i_sltyp = 0
+            this%i_vgtyp = 0
 
             allocate(this%varnames(this%numvar))
             this%varnames(1) = 'LAKEMASK'
@@ -93,18 +97,22 @@ module module_nwp
 
          else if (itype==' HRRR') then
             this%datatype = itype
-            this%numvar = 4
+            this%numvar = 6
 
             this%i_mask = 1
             this%i_sst = 2
             this%i_ice = 3
             this%i_sfcT = 4
+            this%i_sltyp = 5
+            this%i_vgtyp = 6
 
             allocate(this%varnames(this%numvar))
             this%varnames(1) = 'LANDMASK'
             this%varnames(2) = 'SST'
             this%varnames(3) = 'SEAICE'
             this%varnames(4) = 'TSK'
+            this%varnames(5) = 'ISLTYP'
+            this%varnames(6) = 'IVGTYP'
 
             allocate(this%latname)
             allocate(this%lonname)
@@ -144,9 +152,9 @@ module module_nwp
 
          write(*,*) 'List initial setup for ', this%datatype
          write(*,*) 'number of variables ', this%numvar
-         write(*,*) 'variable index: mask, sst, ice, sfcT'
+         write(*,*) 'variable index: mask, sst, ice, sfcT, sltyp, vgtyp'
          write(*,'(15x,10I3)') this%i_mask, this%i_sst, this%i_ice, &
-      &      this%i_sfcT
+      &      this%i_sfcT, this%i_sltyp, this%i_vgtyp
          write(*,*) 'variable name:'
          do k=1,this%numvar
             write(*,*) k,trim(this%varnames(k))
@@ -157,7 +165,7 @@ module module_nwp
 
       end subroutine list_initial_nwp
 
-      subroutine read_nwp(this,filename,itype,numlon,numlat,numtimes,time_to_get,mask,sst,ice,sfcT)
+      subroutine read_nwp(this,filename,itype,numlon,numlat,numtimes,time_to_get,mask,sst,ice,sfcT,sltyp,vgtyp)
 
 !        This subroutine initializes arrays to receive the NWP data,
 !        and opens the file and gets the data.
@@ -170,6 +178,7 @@ module module_nwp
          integer, intent(in) :: time_to_get
          integer, intent(inout) :: numlon, numlat, numtimes
          real(r_single), intent(inout) :: mask(:,:), sst(:,:), ice(:,:), sfcT(:,:)
+         integer, intent(inout) :: sltyp(:,:), vgtyp(:,:)
 
 !        Open the file using module_ncio.f90 code, and find the number of
 !        lat/lon points
@@ -192,6 +201,8 @@ module module_nwp
          allocate(this%nwp_sst(this%xlon,this%xlat,this%xtime))
          allocate(this%nwp_ice(this%xlon,this%xlat,this%xtime))
          allocate(this%nwp_sfcT(this%xlon,this%xlat,this%xtime))
+         allocate(this%nwp_sltyp(this%xlon,this%xlat,this%xtime))
+         allocate(this%nwp_vgtyp(this%xlon,this%xlat,this%xtime))
 
 !        Get variables from the data file, but only if the variable is
 !        defined for that data type.
@@ -215,6 +226,16 @@ module module_nwp
             call ncdata%get_var(this%varnames(this%i_sfcT),this%xlon,  &
                                 this%xlat,this%xtime,this%nwp_sfcT)
             sfcT = this%nwp_sfcT(:,:,time_to_get)
+         end if
+         if (this%i_sltyp .gt. 0) then
+            call ncdata%get_var(this%varnames(this%i_sltyp),this%xlon,  &
+                                this%xlat,this%xtime,this%nwp_sltyp)
+            sltyp = this%nwp_sltyp(:,:,time_to_get)
+         end if
+         if (this%i_vgtyp .gt. 0) then
+            call ncdata%get_var(this%varnames(this%i_vgtyp),this%xlon,  &
+                                this%xlat,this%xtime,this%nwp_vgtyp)
+            vgtyp = this%nwp_vgtyp(:,:,time_to_get)
          end if
 
 !        Close the netCDF file.
@@ -242,6 +263,8 @@ module module_nwp
          deallocate(this%nwp_sst)
          deallocate(this%nwp_ice)
          deallocate(this%nwp_sfcT)
+         deallocate(this%nwp_sltyp)
+         deallocate(this%nwp_vgtyp)
 
          thisobs => this%head
          if(.NOT.associated(thisobs)) then

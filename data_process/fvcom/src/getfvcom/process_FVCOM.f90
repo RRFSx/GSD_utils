@@ -50,8 +50,10 @@ program process_FVCOM
 
    real(r_single), allocatable :: hrrrice(:,:), hrrrsst(:,:)
    real(r_single), allocatable :: hrrrsfcT(:,:), hrrrmask(:,:)
+   integer, allocatable :: hrrrsltyp(:,:), hrrrvgtyp(:,:)
    real(r_single), allocatable :: fvice(:,:), fvsst(:,:)
    real(r_single), allocatable :: fvsfcT(:,:), fvmask(:,:)
+   integer, allocatable :: fvsltyp(:,:), fvvgtyp(:,:)
 
 !  Declare namelists
 !  SETUP (general control namelist) :
@@ -95,11 +97,15 @@ program process_FVCOM
    allocate(hrrrsfcT(nlon,nlat))
    allocate(hrrrsst(nlon,nlat))
    allocate(hrrrmask(nlon,nlat))
+   allocate(hrrrsltyp(nlon,nlat))
+   allocate(hrrrvgtyp(nlon,nlat))
 
    allocate(fvice(nlon,nlat))
    allocate(fvsfcT(nlon,nlat))
    allocate(fvsst(nlon,nlat))
    allocate(fvmask(nlon,nlat))
+   allocate(fvsltyp(nlon,nlat))
+   allocate(fvvgtyp(nlon,nlat))
 
 !  Read HRRR input datasets
 
@@ -108,7 +114,7 @@ program process_FVCOM
 
    call fcst%initial(' HRRR')
    call fcst%list_initial
-   call fcst%read_n(trim(hrrrfile),'HRRR',hrrrlon,hrrrlat,hrrrtimes,t1,hrrrmask,hrrrsst,hrrrice,hrrrsfcT)
+   call fcst%read_n(trim(hrrrfile),'HRRR',hrrrlon,hrrrlat,hrrrtimes,t1,hrrrmask,hrrrsst,hrrrice,hrrrsfcT,hrrrsltyp,hrrrvgtyp)
    call fcst%finish
 
 !  Check that the dimensions match
@@ -131,7 +137,7 @@ program process_FVCOM
 
    call fcst%initial('FVCOM')
    call fcst%list_initial
-   call fcst%read_n(trim(fvcomfile),'FVCOM',fvlon,fvlat,fvtimes,t2,fvmask,fvsst,fvice,fvsfcT)
+   call fcst%read_n(trim(fvcomfile),'FVCOM',fvlon,fvlat,fvtimes,t2,fvmask,fvsst,fvice,fvsfcT,fvsltyp,fvvgtyp)
    call fcst%finish
 
 !  Check that the dimensions match
@@ -149,13 +155,24 @@ program process_FVCOM
    write(*,*) 'time to use: ', t2
 
 !  Update with FVCOM fields
+!  Use FVCOM values for SST, TSK, and SEAICE
+!  Use ice value for soil type and vegetation type if ice cover greater than 10%
 
    do j=1,nlat
       do i=1,nlon
-         if (fvmask(i,j) > 0. .and. fvsst(i,j) .ge. -100.0) then
+         if (fvmask(i,j) .gt. 0. .and. fvsst(i,j) .ge. -80.0) then
             hrrrice(i,j) = fvice(i,j)
             hrrrsst(i,j) = fvsst(i,j) + 273.15
             hrrrsfcT(i,j) = fvsst(i,j) + 273.15
+            if (fvice(i,j) .gt. 0.1) then
+               hrrrsltyp(i,j) = 16
+               hrrrvgtyp(i,j) = 15
+               hrrrmask(i,j) = 1.0
+            else
+               hrrrsltyp(i,j) = 14
+               hrrrvgtyp(i,j) = 17
+               hrrrmask(i,j) = 0.0
+            endif
          endif
       enddo
    enddo
@@ -166,9 +183,14 @@ program process_FVCOM
    if (update_type .eq. 1) then
       call geo%replace_var("SST",NLON,NLAT,hrrrsst)
       call geo%replace_var("TSK",NLON,NLAT,hrrrsfcT)
+      call geo%replace_var("ISLTYP",NLON,NLAT,hrrrsltyp)
+      call geo%replace_var("IVGTYP",NLON,NLAT,hrrrvgtyp)
+      call geo%replace_var("LANDMASK",NLON,NLAT,hrrrmask)
    else
       call geo%replace_var("SEAICE",NLON,NLAT,hrrrice)
+      call geo%replace_var("ISLTYP",NLON,NLAT,hrrrsltyp)
+      call geo%replace_var("LANDMASK",NLON,NLAT,hrrrmask)
    endif
    call geo%close
 
-end program process_FVCOM 
+end program process_FVCOM
