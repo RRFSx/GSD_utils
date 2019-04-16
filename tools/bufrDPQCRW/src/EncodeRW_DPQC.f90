@@ -143,9 +143,10 @@ Program EncodeRW_DPQC
            if(if_use_vad)  call rwdealis%dealiasing_vad(rwdpqc)
 
            if(if_use_local) then
-              call rwdealis%dealiasing_localrw(rwdpqc,1)
               call rwdealis%dealiasing_localrw(rwdpqc,2)
-              call rwdealis%dealiasing_localrw(rwdpqc,3)
+              call rwdealis%dealiasing_localrw(rwdpqc,4)
+              call rwdealis%dealiasing_localrw(rwdpqc,8)
+              call rwdealis%dealiasing_localrw(rwdpqc,16)
            endif
 
            call rwdpqc%wrtbufr(trim(wrtfile_dealiasing),rscf)

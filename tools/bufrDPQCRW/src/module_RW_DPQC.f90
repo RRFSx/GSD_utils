@@ -399,6 +399,9 @@ module module_RW_DPQC
                obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
                obs(2,numrwbin)=this%rw2d(i,iaz)
 !              obs(3,i)=2.5
+             elseif(i==1) then
+               numrwbin=numrwbin+1
+               obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
              endif
           enddo
           if(numrwbin > 0 ) then
@@ -438,7 +441,7 @@ module module_RW_DPQC
         integer(2), allocatable :: pixel_y(:)
         integer, allocatable :: pixel_count(:)
         logical :: ifpixel
-        integer :: i,ii,jj
+        integer :: i,ip,ii,jj
 
         ifpixel=.false.
         
@@ -504,7 +507,9 @@ module module_RW_DPQC
               do i=1,this%pixel
                  ii=max(1,min(pixel_y(i)+1,this%Gate))
                  jj=max(1,min(pixel_x(i)+1,this%Azimuth))
-                 this%rw2d(ii,jj)=rw1d(i)
+                 do ip=1,pixel_count(i)
+                    this%rw2d(ii+ip-1,jj)=rw1d(i)
+                 enddo
               enddo
               deallocate(pixel_x)
               deallocate(pixel_y)

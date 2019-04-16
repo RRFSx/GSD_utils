@@ -21,8 +21,8 @@ module load netcdf/4.6.1
 
 set -x
 #
- cd /gpfs/fs1/p/ral/jntp/mhu/temp/GSD_UTL/tools/bufrDPQCRW/run
- cp /gpfs/fs1/p/ral/jntp/mhu/temp/GSD_UTL/tools/bufrDPQCRW/build/bin/encoderw_dealiasing.exe .
+ cd /gpfs/fs1/p/ral/jntp/mhu/code/GSD_UTL/tools/bufrDPQCRW/run
+ cp /gpfs/fs1/p/ral/jntp/mhu/code/GSD_UTL/tools/bufrDPQCRW/build/bin/encoderw_dealiasing.exe .
 
 #------------------------------------------------
 #  run 

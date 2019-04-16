@@ -14,7 +14,7 @@ MESSAGE( STATUS "SOURCE directory " ${PROJECT_SOURCE_DIR})
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET(BUFRPATH "-L/glade/p/ral/jntp/mhu/gsi/v37/build/lib/ -lbufr_v10.2.5")
-SET(BASELIBPATH "/gpfs/fs1/p/ral/jntp/mhu/temp/GSD_UTL/tools/baselib/build")
+SET(BASELIBPATH "/gpfs/fs1/p/ral/jntp/mhu/code/GSD_UTL/tools/baselib/build")
 SET(NETCDF_LIB "-L$ENV{NETCDF}/lib -lnetcdf -lnetcdff")
 
 SET(Fortran_FLAGS "-O0 -fp-model source -check bounds -g -traceback")

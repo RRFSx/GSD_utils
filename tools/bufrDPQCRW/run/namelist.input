@@ -4,5 +4,5 @@
   if_save_bkrw=.true.,
   if_use_vad=.true.,
   if_use_local=.true.,
-  bkfile="wrfinput_d01",
+  bkfile="/gpfs/fs1/p/ral/jntp/mhu/temp/save/run/wrfinput_d01",
 /

@@ -150,8 +150,8 @@ module module_RW_dealiasing
         enddo
 
         el=rwdpqc%Elevation
-        cntmn=90
-        tgap=180
+        cntmn=60
+        tgap=270
         rmsmx=50.0_r_single
         rmissing=-8888.0
 !        write(*,*) aza
@@ -197,7 +197,7 @@ module module_RW_dealiasing
 !
         
         write(*,*) '====> dealiasing with local rw. The size of local domain is ',nsize
-        minsize=nsize*2*nsize*2*0.8
+        minsize=nsize*2*nsize*2*0.7
 
         do iaz=1,this%Azimuth
 !           write(*,*) iaz, rwdpqc%rwAzimuth(iaz),rwdpqc%NyquistV(iaz),rwdpqc%Elevation
