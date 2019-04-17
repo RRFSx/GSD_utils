@@ -1,4 +1,5 @@
 &setup
+  idate=2018062700,
   if_dealiasing=.true.,
   if_use_kbrw=.true.,
   if_save_bkrw=.true.,

@@ -37,8 +37,10 @@ Program EncodeRW_DPQC
   logical :: if_use_vad 
   logical :: if_use_kbrw
   logical :: if_use_local
+  integer :: idate
   character(len=180) :: bkfile
-  namelist /setup/ if_dealiasing, if_use_kbrw, if_save_bkrw, if_use_vad, if_use_local,bkfile
+  namelist /setup/ idate,if_dealiasing, if_use_kbrw, if_save_bkrw, &
+                   if_use_vad, if_use_local,bkfile
   logical :: ifexist
 !
 !  MPI setup
@@ -48,6 +50,7 @@ Program EncodeRW_DPQC
 !
 ! setup dealiasing options
 !
+  idate=2018062700
   if_dealiasing=.false.
   if_save_bkrw=.false.
   if_use_vad=.false.
@@ -132,7 +135,7 @@ Program EncodeRW_DPQC
         crwfile=trim(filelist(i))
         write(logout,'(a,I5,2x,a)') "processing ",i,trim(crwfile)
 
-        call rwdpqc%readnc(trim(crwfile))
+        call rwdpqc%readnc(trim(crwfile),idate)
         call rwdpqc%wrtbufr(trim(wrtfile),rscf)
         if(if_dealiasing) then
            call rwdealis%initial(rwdpqc)

@@ -19,6 +19,7 @@ module module_RW_DPQC
   type :: rw_dpqc
 
      character(len=180) :: crwfile
+     integer :: idate
      integer :: Azimuth,Gate
      real    :: Elevation,RangeToFirstGate
      real    :: Latitude,Longitude,Height
@@ -365,8 +366,9 @@ module module_RW_DPQC
         hdr2(4)=this%ihh
         hdr2(5)=this%imin
         hdr2(6)=this%iss
-        valid_time=this%iyy*1000000 + this%imm*10000 + &
-                   this%idd*100 + this%ihh
+!        valid_time=this%iyy*1000000 + this%imm*10000 + &
+!                   this%idd*100 + this%ihh
+        valid_time=this%idate
 
         hdr3(1)=this%scanid()
         hdr3(3)=this%rvcp_value
@@ -398,7 +400,7 @@ module module_RW_DPQC
                numrwbin=numrwbin+1
                obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
                obs(2,numrwbin)=this%rw2d(i,iaz)
-!              obs(3,i)=2.5
+               obs(3,i)=5.5
              elseif(i==1) then
                numrwbin=numrwbin+1
                obs(1,numrwbin)=(this%RangeToFirstGate+this%GateWidth*(i-1))/125.0
@@ -421,7 +423,7 @@ module module_RW_DPQC
 
      end subroutine write_rw2bufr
 
-     subroutine read_rw_dpqc(this,crwfile)
+     subroutine read_rw_dpqc(this,crwfile,idate)
 !
 !  read in DPQC netcdf file
 !
@@ -429,6 +431,7 @@ module module_RW_DPQC
 
         class(rw_dpqc),intent(inout) :: this
         character(len=*),intent(in)  :: crwfile
+        integer,intent(in)           :: idate
     
         character(len=10) :: vcp_value
         character(len=3)  :: Unambiguous_Range
@@ -446,6 +449,7 @@ module module_RW_DPQC
         ifpixel=.false.
         
         this%crwfile=trim(crwfile)
+        this%idate=idate
 
         call ncrwin%open(trim(crwfile),"r",0)
         call ncrwin%get_dim("Azimuth",this%Azimuth)
