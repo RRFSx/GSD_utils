@@ -43,7 +43,7 @@ module module_ncio
       generic   :: get_var => get_var_nc_double_1d, get_var_nc_double_2d, &
                               get_var_nc_double_3d,                       &
                               get_var_nc_real_1d,get_var_nc_real_2d,      &
-                              get_var_nc_real_3d,                         &
+                              get_var_nc_real_3d,get_var_nc_real_4d,      &
                               get_var_nc_int_1d,get_var_nc_int_2d,        &
                               get_var_nc_int_3d,                          &
                               get_var_nc_short_1d, get_var_nc_short_2d,   &
@@ -62,6 +62,7 @@ module module_ncio
       procedure :: get_var_nc_real_1d
       procedure :: get_var_nc_real_2d
       procedure :: get_var_nc_real_3d
+      procedure :: get_var_nc_real_4d
       procedure :: get_var_nc_double
       procedure :: get_var_nc_double_1d
       procedure :: get_var_nc_double_2d
@@ -1533,6 +1534,62 @@ subroutine get_var_nc_real_3d(this,varname,nd1,nd2,nd3,field)
   deallocate(temp)
 !
 end subroutine get_var_nc_real_3d
+
+subroutine get_var_nc_real_4d(this,varname,nd1,nd2,nd3,nd4,field)
+!
+! read in one field 
+!
+  use netcdf
+!
+  implicit none
+!
+  class(ncio) :: this
+  character(len=*),intent(in) :: varname  ! name of the field to read
+  integer, intent(in) :: nd1,nd2,nd3,nd4  !  size of array dval
+  real(4), intent(out) :: field(nd1,nd2,nd3,nd4) !  values of the field read in
+  integer :: ilength
+!
+  real(4),allocatable :: temp(:)
+!
+  character*40,parameter :: thissubname='get_var_nc_real_4d'
+!
+  integer :: i,j,k,t
+  integer :: length3d
+  integer :: istart,iend
+!
+!
+  length3d=nd1*nd2*nd3
+  ilength=length3d*nd4
+  allocate(temp(ilength))
+
+  call this%get_var_nc_real(varname,ilength,temp)
+
+  if(nd1==this%ends(1) .and. nd2==this%ends(2) .and. nd3==this%ends(3) .and. nd4==this%ends(4)) then
+     do t=1,nd4
+       do k=1,nd3
+          do j=1,nd2
+             istart=(t-1)*length3d+(k-1)*nd2*nd1+(j-1)*nd1+1
+             iend  =(t-1)*length3d+(k-1)*nd2*nd1+(j-1)*nd1+nd1
+             field(:,j,k,t)=temp(istart:iend)
+          enddo
+        enddo
+     enddo
+!
+     if(this%debug_level>100) then
+        write(*,*) trim(thissubname),' show samples:'
+        do t=1,nd4
+           do k=1,nd3
+              write(*,*) 't,k,max,min:',t,k,maxval(field(:,:,k,t)),minval(field(:,:,k,t))
+           enddo
+        enddo
+     endif
+  else
+     write(*,*) trim(thissubname),' ERROR: dimension does not match.'
+     write(*,*) nd1,this%ends(1),nd2,this%ends(2),nd3,this%ends(3),nd4,this%ends(4)
+  endif
+  deallocate(temp)
+!
+end subroutine get_var_nc_real_4d
 !
 subroutine get_var_nc_real(this,varname,ilength,field)
 !
