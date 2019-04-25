@@ -506,6 +506,7 @@ endif
    end do
 
    ! check for snow over water
+ if( update_lsm ) then !tgs - do not change snow when update_lsm is .false.
    iostatus(1) = nf_inq_varid(cdfid, 'IVGTYP', varid)
    iostatus(2) = nf_inq_varid(cdfid, 'SNOW',   varid)
    iostatus(3) = nf_inq_varid(cdfid, 'SNOWC',  varid)
@@ -562,6 +563,7 @@ endif
       deallocate(snowh)
       deallocate(ivgtyp)
    end if
+ endif ! update_lsm
    
  if ( update_lateral_bdy ) then
 

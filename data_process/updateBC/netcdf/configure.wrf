@@ -43,7 +43,7 @@ LWORDSIZE = 4
 
 # WRF_SRC_ROOT_DIR = /pan2/projects/nrtrr/alexander/code/rapidrefresh/rapid-refresh/WRFV3.8_GSD_hybridcoord
 # WRF_SRC_ROOT_DIR = /scratch3/BMC/wrfruc/mhu/rapcode/git_local/work/WRFV3.8_GSD_hybridcoord
- WRF_SRC_ROOT_DIR = /scratch4/BMC/wrfruc/smirnova/rapid-refresh/WRFV3.8_GSD_hybridcoord
+ WRF_SRC_ROOT_DIR = /mnt/lfs1/projects/rtwbl/mhu/rapcode/work/WRFV3.8_GSD_hybridcoord_eclipse_July2018
 
 ##############################################################################
 #### The settings in this section are defaults that may be overridden by the 
@@ -108,7 +108,7 @@ LIBWRFLIB = libwrflib.a
 
 #### Architecture specific settings ####
 
-# Settings for    Linux x86_64 ppc64le i486 i586 i686, ifort compiler with icc  (dm+sm)
+# Settings for    Linux x86_64 ppc64le i486 i586 i686, ifort compiler with icc  (dmpar)
 #
 #        By default, some files are compiled without optimizations to speed up compilation. Removing
 #        respective makefile rules in the end of this file will result in longer compilation time, and, possibly
@@ -146,8 +146,8 @@ LIBWRFLIB = libwrflib.a
 DESCRIPTION     =       INTEL ($SFC/$SCC)
 DMPARALLEL      =        1
 OMPCPP          =        -D_OPENMP
-OMP             =        -openmp -fpp -auto
-OMPCC           =        -openmp -fpp -auto
+OMP             =        -qopenmp -fpp -auto
+OMPCC           =        -qopenmp -fpp -auto
 SFC             =       mpif90 -f90=ifort
 SCC             =       icc
 CCOMP           =       icc
@@ -189,22 +189,26 @@ CC_TOOLS        =      $(SCC)
 
 FGREP = fgrep -iq
 
+# HRRR 20151231, JM: Note setting of HARDCODE VERTICAL. Optimization for Thompson MP.
+# This should be changed and code recompiled if number of vertical layers changes.  
+
 ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZE) -DRWORDSIZE=$(RWORDSIZE) -DLWORDSIZE=$(LWORDSIZE) \
                      $(ARCH_LOCAL) \
                      $(DA_ARCHFLAGS) \
                       -DDM_PARALLEL \
                        \
                       -DNETCDF \
-                      -DPNETCDF -DPNETCDF_QUILT \
+                      -DPNETCDF \
                        \
                        \
                        \
                        \
+                      -DHDF5 \
                        \
                        \
                        \
                        \
-                       \
+                      -DHARDCODE_VERTICAL=50 \
                       -DUSE_ALLOCATABLES \
                       -DGRIB1 \
                       -DINTIO \
@@ -247,15 +251,15 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
                       $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
  LIB_EXTERNAL    = \
-                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -L/apps/netcdf/3.6.3-intel/lib  -lnetcdf  -L$(WRF_SRC_ROOT_DIR)/external/io_pnetcdf -lwrfio_pnf -L/apps/pnetcdf/1.6.1-intel15-impi5/lib -lpnetcdf   
+                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -L/apps/netcdf/4.2.1.1-intel/lib -lnetcdff -lnetcdf  -L$(WRF_SRC_ROOT_DIR)/external/io_pnetcdf -lwrfio_pnf -L/apps/pnetcdf/1.6.1-intel15-impi5/lib -lpnetcdf   -L/apps/hdf5/1.8.9-intel/lib -lhdf5_fortran -lhdf5 -lm -lz
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =     -DWRF_DFI_RADAR=1
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /apps/netcdf/3.6.3-intel
-HDF5PATH        =    
+NETCDFPATH      =    /apps/netcdf/4.2.1.1-intel
+HDF5PATH        =    /apps/hdf5/1.8.9-intel
 WRFPLUSPATH     =    
 RTTOVPATH       =    CONFIGURE_RTTOV_PATH
 PNETCDFPATH     =    /apps/pnetcdf/1.6.1-intel15-impi5
