@@ -16,8 +16,9 @@ if(EXISTS /jetmon)
   set(HOST-Jet "True" )
 endif()
 
-### be sure to load these modules on Jet:
-#-- module purge; module load newdefaults  szip/2.1  intel/15.0.3.187  impi/5.1.1.109 hdf5/1.8.9 netcdf4/4.2.1.1
+### Do the following to load required compiling modules on Jet
+#     source /home/rtrr/PARM_EXEC/modulefiles/modulefile.jet.GSI_UPP_WRF 
+###
 
 if(HOST-Cheyenne)
   ###SET(GSIBUILD  "/glade/work/geguo/MPMC/b_release_v3.7/ci06.intel_17.0.1.mpt_2.15f")
@@ -30,9 +31,9 @@ if(HOST-Cheyenne)
   ### BLAS_iomp5_LIBRARY
   SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so")
 elseif(HOST-Jet)
-    ###SET(GSIBUILD  "/mnt/lfs1/projects/wrfruc/gge/MPMC/b_comGSIv3.7_4f76d254/ji05.intel_15.0.3.187.impi_5.1.1.109")_
     ###set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
-  SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build")
+    ###SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsicode/build")
+  SET(GSIBUILD  "/lfs1/projects/wrfruc/gge/MPMC/b_new_Jet_OS/ji01.intel_18.0.5.274.impi_2018.4.274")
   set(COMUPP "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/upp/GSD_UPP_20190217_bc55f77/comupp")
   set(wrfframe "/mnt/lfs1/projects/rtwbl/mhu/code/wrf/WRFV3.9.1.1/frame/pack_utils.o")
   set(WPSBUILD "/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WPSV3.9")
@@ -93,7 +94,7 @@ SET(LIBSP     "${COMUPP}/lib/libsp.a")
 SET(LIBIP     "${COMUPP}/lib/libip.a")
 
 set(LIBG2_WPS "${WPSBUILD}/ungrib/src/ngl/g2/libg2_4.a")
-#SET(CONSTANTS "${GSIBUILD}/src/CMakeFiles/gsilib_shrd.dir/constants.f90.o")
+SET(CONSTANTS "${GSIBUILD}/src/gsi/CMakeFiles/gsilib_shrd.dir/constants.f90.o")
 
 SET(Fortran_FLAGS "-O3 -fp-model precise -assume byterecl -fpe0 -DLINUX -g -traceback")
 SET(Fortran_FLAGS_bigEndian "-convert big_endian")
@@ -106,7 +107,7 @@ SET(EXEsatcast  "process_satcast_netcdf.${EXESUFFIX}")
 SET(EXEsnow     "process_NESDIS_imssnow.${EXESUFFIX}")
 SET(EXEcloud    "rap_process_cloud.${EXESUFFIX}")
 SET(EXEsst      "process_SST.${EXESUFFIX}")
-
+SET(EXEfvcom    "process_FVCOM.${EXESUFFIX}")
 
 add_subdirectory(mosaic/all)
 add_subdirectory(updateGVF)
@@ -116,6 +117,7 @@ add_subdirectory(lightning/merge/src/baselib)
 add_subdirectory(lightning/merge/src/getobsltng)
 add_subdirectory(lightning/netcdf_bufr)
 add_subdirectory(lightning/netcdf)
+add_subdirectory(fvcom)
 
 add_subdirectory(diag_obscount)
 add_subdirectory(ref2tten)
