@@ -133,6 +133,7 @@ program  process_NASALaRC_global_cloud
 
   ENDDO  ! isat 
 
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 !
 end program process_NASALaRC_global_cloud
 

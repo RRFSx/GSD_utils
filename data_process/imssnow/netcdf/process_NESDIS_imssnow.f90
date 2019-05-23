@@ -119,6 +119,7 @@ PROGRAM process_NESDIS_imssnow
 !
   call update_SNOWICE_netcdf_mass(snowiceRR, xlandRR, luseRR, nlonRR, nlatRR,xlandIMS)
 !
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 
 END PROGRAM process_NESDIS_imssnow
 

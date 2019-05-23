@@ -33,7 +33,7 @@ subroutine read_NSSL_mosaic(nread,ndata,infile,obstype,lunout)
 !
 !_____________________________________________________________________
 !
-      use kinds, only: r_kind,r_double,i_kind
+      use kinds, only: r_kind,i_kind
       use constants, only: zero,one_tenth,one,deg2rad,rad2deg
       use gridmod, only: regional,nlon,nlat,nsig,         &
                          tll2xy,txy2ll,                   &

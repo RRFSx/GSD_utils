@@ -197,7 +197,7 @@ subroutine read_netcdf_mass(dh1,DateStr1,nlon,nlat,nsig,   &
      zh=field3(:,:,1)/grav
      write(6,*)' max,min zh =',maxval(zh),minval(zh)
   else
-     write(*,*) 'error in read from ',trim(rmse_var),' error=',ierr
+     write(6,*) 'error in read from ',trim(rmse_var),' error=',ierr
   endif
   deallocate(field3)
 

@@ -353,5 +353,6 @@ program process_Lightning
 
 !   call geo%create_nc('GLD360_test.nc','lightning',nlon,nlat,lightning(1,:,:))
 !   call geo%create_nc('GLM_test.nc','event_energy',nlon,nlat,lightning(5,:,:))
+   write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 
 end program process_Lightning 

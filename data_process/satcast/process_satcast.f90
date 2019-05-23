@@ -306,6 +306,8 @@ program  process_SATCAST
 !  ENDDO
 !  ENDDO
 !
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
 end program process_SATCAST
 
 subroutine read_satcast(satfile, nxp, nyp, IR_CR, sos_in, lat, lon)

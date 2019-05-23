@@ -167,6 +167,8 @@ if(mype==0) then
   call ext_ncd_ioclose(dh1, Status)
   call ext_ncd_ioclose(dh2, Status)
 
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
 endif ! mype==0
 
   call MPI_FINALIZE(ierror)

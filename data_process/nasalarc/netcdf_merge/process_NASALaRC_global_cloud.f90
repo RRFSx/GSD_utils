@@ -570,6 +570,8 @@ program  process_NASALaRC_global_cloud
 !  ENDDO
 !  ENDDO
 !
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
 end program process_NASALaRC_global_cloud
 
 subroutine sortmed(p,n,is)

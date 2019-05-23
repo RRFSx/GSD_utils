@@ -121,6 +121,8 @@ PROGRAM process_SST
 !
      call update_SST_netcdf_mass(sstRR, ylat, xlon, nlon, nlat,xland,vegtyp,ilake,iice)
 !
+     write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
   endif ! mype==0
 
   call MPI_FINALIZE(ierror)

@@ -161,6 +161,7 @@ PROGRAM process_NESDIS_imssnow
         write(*,*) 'stop update snow/ice'
      endif
 
+     write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
   endif ! mype==0
 
   call MPI_FINALIZE(ierror)

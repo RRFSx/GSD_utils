@@ -60,6 +60,7 @@ program gsdcloudanalysis_ref2tten
 !
 ! background
 !
+  integer, parameter :: maxcores=4
   integer(i_kind) iyear,imonth,iday,ihour,iminute,isecond
   integer(i_kind) nlon_regional,nlat_regional,nsig_regional
   real(r_single)  pt_regional
@@ -135,9 +136,20 @@ program gsdcloudanalysis_ref2tten
   call MPI_COMM_RANK(mpi_comm_world,mype,ierror)
 
 !  mype=0
-  write(*,*) mype, 'deal with tten'
-  mypeLocal=mype+1
+  write(6,*) 'total cores for this run is ',npe
+  if(npe < maxcores) then
+     write(6,*) 'ERROR, this run must use ',maxcores,' or more cores !!!'
+     call MPI_FINALIZE(ierror)
+     stop 1234
+  endif
 
+  mypeLocal=mype+1
+  if(mypeLocal <= maxcores) then
+!  standard output file for each core
+  write(radarfile,'(a,I2.2)') 'stdout_refltotten.',mypeLocal
+  open(6, file=trim(radarfile),form='formatted',status='unknown')
+  write(6,*) '===> deal with tten time level = ', mypeLocal
+!
 ! 2.0  open and read background dimesion
 !          
   call init_constants(.true.)
@@ -219,10 +231,10 @@ program gsdcloudanalysis_ref2tten
                      pt_ll,eta1_ll,aeta1_ll)
 
   do k=1,nsig_regional
-     write(*,*) 'max.min, h_bk=',k,maxval(h_bk(:,:,k)), minval(h_bk(:,:,k))
+     write(6,*) 'max.min, h_bk=',k,maxval(h_bk(:,:,k)), minval(h_bk(:,:,k))
   enddo
   do k=1,nsig_regional
-     write(*,*) 'max.min, p_bk=',k,maxval(p_bk(:,:,k)), minval(p_bk(:,:,k))
+     write(6,*) 'max.min, p_bk=',k,maxval(p_bk(:,:,k)), minval(p_bk(:,:,k))
   enddo
 
 ! 
@@ -230,7 +242,7 @@ program gsdcloudanalysis_ref2tten
 ! 
   allocate(pblh(nlon_regional,nlat_regional))
   call calc_pbl_height(nlon_regional,nlat_regional,nsig_regional,q_bk,t_bk,p_bk,pblh)
-  write(*,*) 'max.min, pblh=',maxval(pblh), minval(pblh)
+  write(6,*) 'max.min, pblh=',maxval(pblh), minval(pblh)
 
   deallocate(q_bk)
   deallocate(ps_bk)
@@ -255,63 +267,63 @@ program gsdcloudanalysis_ref2tten
   n=mypeLocal
 
      write(radarfile,'(a,I2.2)') 'RefInGSI3D.dat_',n
-     write(*,*)
-     write(*,*) 'processing ',trim(radarfile)
+     write(6,*)
+     write(6,*) 'processing ',trim(radarfile)
      open(iunit_radar,file=trim(radarfile),form='unformatted',status='old',err=42)
         read(iunit_radar) Nmsclvl_radar,nlon_radar,nlat_radar
         allocate(ref_mosaic31(nlon_regional,nlat_regional,Nmsclvl_radar))
         read(iunit_radar) ref_mosaic31
      close(iunit_radar)
-     write(*,*) 'Nmsclvl_radar,nlon_radar,nlat_radar',  &
+     write(6,*) 'Nmsclvl_radar,nlon_radar,nlat_radar',  &
                  Nmsclvl_radar,nlon_radar,nlat_radar
      do k=1,Nmsclvl_radar
-        write(*,*) 'ref_mosaic31=',k,maxval(ref_mosaic31(:,:,k)), &
+        write(6,*) 'ref_mosaic31=',k,maxval(ref_mosaic31(:,:,k)), &
                                      minval(ref_mosaic31(:,:,k))
      enddo
      goto 43
 ! 08 AUG 2017 EJ: Add a graceful handling of missing radar data
-42   write(*,*) 'WARNING: RADAR FILE MISSING:', radarfile
+42   write(6,*) 'WARNING: RADAR FILE MISSING:', radarfile
      rad_missing=1
 !
 ! Read in lightning data
 !
 43   write(lightningfile,'(a,I2.2)') 'LightningInGSI.dat_',n
-     write(*,*)
-     write(*,*) 'processing ',trim(lightningfile)
+     write(6,*)
+     write(6,*) 'processing ',trim(lightningfile)
      open(iunit_lightning,file=trim(lightningfile),form='unformatted',status='old',err=47)
         read(iunit_lightning) header1,nlon_lightning,nlat_lightning,numlight,header2,header3
         allocate(lightning_in(3,numlight))
         lightning_in=-9999.0_r_single
         read(iunit_lightning) lightning_in
      close(iunit_lightning)
-     write(*,*) 'finished read ',trim(lightningfile), numlight
+     write(6,*) 'finished read ',trim(lightningfile), numlight
      allocate(lightning(nlon_regional,nlat_regional))
      lightning=-9999.0_r_single
      call read_Lightning2cld(nlon_regional,nlat_regional,numlight,lightning_in,lightning)
      deallocate(lightning_in)
      goto 48
 ! 08 AUG 2017 EJ: Add a graceful handling of missing radar data
-47   write(*,*) 'WARNING: LIGHTNING FILE MISSING:', lightningfile
+47   write(6,*) 'WARNING: LIGHTNING FILE MISSING:', lightningfile
      allocate(lightning(nlon_regional,nlat_regional))
      lightning=-9999.0_r_single
 !
 !  Read in SATCAST data on analysis grid from binary file
 !
 !     write(scfile,'(a,I2.2)') 'ScstInGSI3D.dat_',n
-!     write(*,*)
-!     write(*,*) 'processing ',trim(scfile)
+!     write(6,*)
+!     write(6,*) 'processing ',trim(scfile)
 !     open(iunit_satcast,file=trim(scfile),form='unformatted')
 !        read(iunit_satcast) nlon_sc,nlat_sc
 !        if(nlon_sc.ne.nlon_regional.or. nlat_sc.ne.nlat_regional) &
-!         write(*,*) 'mismatch between analysis grid and satcast', &
+!         write(6,*) 'mismatch between analysis grid and satcast', &
 !                     nlat_sc,nlon_sc,nlat_regional,nlon_regional
 !        allocate(satcast_cr(nlon_regional,nlat_regional))
 !        satcast_cr=9999.0_r_single
 !        read(iunit_satcast) satcast_cr
 !     close(iunit_satcast)
-!     write(*,*) 'nlon_sc,nlat_sc',  &
+!     write(6,*) 'nlon_sc,nlat_sc',  &
 !                 nlon_sc,nlat_sc
-!     write(*,*) 'satcast_cr=',maxval(satcast_cr(:,:)), &
+!     write(6,*) 'satcast_cr=',maxval(satcast_cr(:,:)), &
 !                              minval(satcast_cr(:,:))
 
 !
@@ -325,7 +337,7 @@ program gsdcloudanalysis_ref2tten
                          ref_mos_3d,ref_mosaic31,h_bk,zh)
      endif
      do k=1,nsig_regional
-        write(*,*) 'vinterp ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
+        write(6,*) 'vinterp ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
                                            minval(ref_mos_3d(:,:,k))
      enddo
 ! EJ: only call this part if radar data are not missing
@@ -335,7 +347,7 @@ program gsdcloudanalysis_ref2tten
      call build_missing_REFcone(nlon_regional,nlat_regional,nsig_regional, &
                              krad_bot,ref_mos_3d,h_bk,pblh)
      do k=1,nsig_regional
-        write(*,*) 'refcon ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
+        write(6,*) 'refcon ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
                                           minval(ref_mos_3d(:,:,k))
      enddo
 
@@ -343,28 +355,28 @@ program gsdcloudanalysis_ref2tten
 ! Convert lightning flash rate to reflectivities 
 !
 !
-     write(*,*) 'calling convert_lghtn2ref'
+     write(6,*) 'calling convert_lghtn2ref'
 ! 
      call convert_lghtn2ref(mype,nlon_regional,nlat_regional,nsig_regional,ref_mos_3d,lightning,h_bk)
      deallocate( lightning )
 
-     write(*,*) 'done adding lightning data'
+     write(6,*) 'done adding lightning data'
      do k=1,nsig_regional
-        write(*,*) 'lightning',k,' ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
+        write(6,*) 'lightning',k,' ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
                                                   minval(ref_mos_3d(:,:,k))
      enddo
 !
 !
-!     write(*,*) 'calling convert_stcst2ref'
+!     write(6,*) 'calling convert_stcst2ref'
 !
 !  convert satcast cooling rates to reflectivities
 !
 !     call convert_stcst2ref(nlon_regional,nlat_regional,nsig_regional, ref_mos_3d,satcast_cr,h_bk)
 !     deallocate( satcast_cr )
-!     write(*,*) 'done adding satcast data'
+!     write(6,*) 'done adding satcast data'
  
 !     do k=1,nsig_regional
-!       write(*,*) 'satcast',k,' ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
+!       write(6,*) 'satcast',k,' ref_mos_3d=',k,maxval(ref_mos_3d(:,:,k)), &
 !                                               minval(ref_mos_3d(:,:,k))
 !     enddo
 
@@ -381,7 +393,7 @@ program gsdcloudanalysis_ref2tten
                      l_tten_for_convection_only,convection_refl_threshold)
      deallocate(ref_mos_3d)
      do k=1,nsig_regional
-        write(*,*) 'ges_tten=',k,maxval(ges_tten(:,:,k)), &
+        write(6,*) 'ges_tten=',k,maxval(ges_tten(:,:,k)), &
                                  minval(ges_tten(:,:,k))
      enddo
 
@@ -449,7 +461,7 @@ program gsdcloudanalysis_ref2tten
   endif
 
   call ext_ncd_ioclose(dh1, Status)
-  write(*,*) 'finisd, now release memory'
+  write(6,*) 'core', mype ,',finished, now release memory'
 !
 !  release memory
 !
@@ -460,8 +472,11 @@ program gsdcloudanalysis_ref2tten
   deallocate(zh)
   deallocate(eta1_ll,aeta1_ll)
 
-  write(*,*) 'End of release memory'
+  endif ! mypeLocal <= maxcores
 
+  call MPI_Barrier(mpi_comm_world, ierror)
+  close(6)
+  if(mype==0)  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
   call MPI_FINALIZE(ierror)
 
 end program gsdcloudanalysis_ref2tten

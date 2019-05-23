@@ -12,12 +12,17 @@
 
 program process_FVCOM
 
+   use mpi
    use module_map_utils, only: map_util
    use kinds, only: r_kind, i_kind, r_single
    use module_ncio, only: ncio
    use module_nwp, only: fcst_nwp
 
    implicit none
+
+! MPI variables
+  integer :: npe, mype, mypeLocal,ierror
+!
 
 !  New object-oriented declarations
 
@@ -59,6 +64,17 @@ program process_FVCOM
    integer :: update_type
 
    namelist/setup/update_type, t2
+
+! MPI setup
+  call MPI_INIT(ierror)
+  call MPI_COMM_SIZE(mpi_comm_world,npe,ierror)
+  call MPI_COMM_RANK(mpi_comm_world,mype,ierror)
+
+!
+! NCEP LSF has to use all cores allocated to run this application 
+! but this if check can make sure only one core run through the real code.
+if(mype==0) then
+!
 
    read(5,setup)
    write(*,*) 'From namelist: update type is ', update_type
@@ -170,5 +186,12 @@ program process_FVCOM
       call geo%replace_var("SEAICE",NLON,NLAT,hrrrice)
    endif
    call geo%close
+
+   write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
+endif ! mype==0
+
+call MPI_FINALIZE(ierror)
+
 
 end program process_FVCOM 

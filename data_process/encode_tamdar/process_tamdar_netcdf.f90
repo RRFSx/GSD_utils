@@ -194,6 +194,7 @@ program  process_tamdar_netcdf
 !
   call append_tamdar(numtotalTamdar,iyear,month,iday,ihh,time_window)
   
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 !
 end program process_tamdar_netcdf
 

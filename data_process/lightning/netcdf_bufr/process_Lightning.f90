@@ -242,6 +242,8 @@ program process_Lightning
    write(6,*) ' write lightning in BUFR'
    call write_bufr_lightning(1,nlon,nlat,numlightning,lightning_out,idate)
 
+   write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
+
    endif   ! only us one core mype==0
    call MPI_FINALIZE(ierror)
 !

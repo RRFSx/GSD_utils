@@ -9,3 +9,4 @@ set(EXE ${EXEsnow})
 add_executable(${EXE} ${src_all})
 set_target_properties( ${EXE} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
 target_link_libraries( ${EXE} ${wrflib} ${NETCDFLIB} ${LIBBACIO_UPP} ${LIBIP} ${LIBSP} ${LIBW3NCO_UPP} ${LIBW3EMC_UPP} )
+

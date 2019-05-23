@@ -303,6 +303,8 @@ if(mype==0) then
   deallocate(vegfrc,vegfrc_max,vegfrc_min)
   deallocate(xlon,ylat)
   deallocate(vegfrc_obs)
+ 
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 
 endif ! mype==0
 

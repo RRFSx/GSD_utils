@@ -417,6 +417,7 @@ program  process_NASALaRC_cloud
 !
   call write_bufr_NASALaRC(bufrfile,analysis_time,nlon,nlat,userDX,index,w_pcld,w_tcld,w_frac,w_lwp,nlev_cld)
 !
+  write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 
   endif ! if mype==0 
 
