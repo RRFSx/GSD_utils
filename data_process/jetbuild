@@ -1,8 +1,0 @@
-#!/bin/bash
-echo
-echo "source /home/rtrr/PARM_EXEC/modulefiles/modulefile.jet.GSI_UPP_WRF"
-echo "rm -rf build; mkdir build; cd build"
-echo "cmake .."
-echo "make -j8"
-echo "ls bin/*"
-echo

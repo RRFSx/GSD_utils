@@ -26,14 +26,13 @@ if(HOST-Cheyenne)
   set(COMUPP "/gpfs/fs1/p/ral/jntp/mhu/rapcode/GSD_UPP/comupp")
   set(wrfframe "/glade/p/ral/jntp/DAtask/chunhua/HRRR-2018/code/rapid-refresh/WRFV3.9/frame/pack_utils.o")
   set(WPSBUILD "/gpfs/fs1/p/ral/jntp/mhu/wrf/WPSV3.9.0.01")
-  ### MPI_FORTRAN_LIBRARIES
+  ### MPI_Fortran_LIBRARIES
   SET(MPILIB  "/gpfs/u/apps/ch/opt/mpt/2.19/opt/hpe/hpc/mpt/mpt-2.19/lib/libxmpi.so")
   ### BLAS_iomp5_LIBRARY
   SET(LIBIOMP5  "/glade/u/apps/opt/intel/2017u1/compilers_and_libraries/linux/lib/intel64_lin/libiomp5.so")
   SET(LIBPNG    "/usr/lib64/libpng.so")
 elseif(HOST-Jet)
-  SET(GSIBUILD  "/lfs1/projects/wrfruc/gge/MPMC/b_new_Jet_OS/ji01.intel_18.0.5.274.impi_2018.4.274")
-#  SET(GSIBUILD  "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/gsi/sync_april2019/build")
+  SET(GSIBUILD  "/mnt/lfs1/projects/wrfruc/gge/git/ProdGSI/build_raphrrr_d2e77eaf" )
   set(COMUPP "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/upp/GSD_UPP_20190217_bc55f77/comupp")
   set(wrfframe "/mnt/lfs1/projects/rtwbl/mhu/code/wrf/WRFV3.9.1.1/frame/pack_utils.o")
   set(WPSBUILD "/mnt/lfs3/projects/rtwbl/mhu/rapcode/git_local/work/WPSV3.9")
