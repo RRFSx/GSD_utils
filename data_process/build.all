@@ -6,7 +6,7 @@
 #
 #  build commands:
 #    cmake path_to_GSD_UTL
-#    make -j4
+#    make -j8
 #
 
 dir_root=$(pwd)
@@ -47,19 +47,19 @@ echo -e "\ngit status:" >> output.log
 git status >> output.log
 echo -e "\nCompiling commands:" >> output.log
 echo "  cmake .." >> output.log
-echo "  make -j 4" >> output.log
+echo "  make -j 8" >> output.log
 cat output.log
 
 
 cmake ..  2>&1 | tee output.cmake
-make -j 4 2>&1 | tee output.compile
+make -j 8 2>&1 | tee output.compile
 
 ###aftermath
 commitID=`git log -1 | head -n1 |cut -c8-15`
 repoName=`git config --get remote.origin.url | cut -d: -f2`
 datestamp=`date +%Y%m%d`
 ## declare an array variable
-declare -a exeList=("full_cycle_surface.exe" "gen_annual_maxmin_GVF.exe" "process_FVCOM.exe" "process_Lightning_bufr.exe" "process_Lightning.exe" "process_Lightning_nc.exe" "process_NESDIS_imssnow.exe" "process_NSSL_mosaic.exe" "process_satcast_netcdf.exe" "process_SST.exe" "process_tamdar_netcdf.exe" "rap_process_cloud.exe" "read_diag_conv.exe" "read_diag_rad.exe" "ref2tten.exe" "update_GVF.exe")
+declare -a exeList=("full_cycle_surface.exe" "gen_annual_maxmin_GVF.exe" "process_FVCOM.exe" "process_Lightning_bufr.exe" "process_Lightning.exe" "process_Lightning_nc.exe" "process_NESDIS_imssnow.exe" "process_NSSL_mosaic.exe" "process_satcast_netcdf.exe" "process_SST.exe" "process_tamdar_netcdf.exe" "rap_process_cloud.exe" "read_diag_conv.exe" "read_diag_rad.exe" "ref2tten.exe" "update_GVF.exe" "count_obs.exe")
 cd bin
 for i in "${exeList[@]}"; do
   ln -snf $i ${i}_${repoName}_${commitID}_${datestamp}

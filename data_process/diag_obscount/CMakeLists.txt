@@ -7,6 +7,9 @@ set_source_files_properties(read_diag_conv.f90 PROPERTIES COMPILE_FLAGS ${Fortra
 
 include_directories( ${GSIINC} ${NETCDFINC} )
 
+add_executable(count_obs.exe count_obs.f90)
+set_target_properties( count_obs.exe  PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS_ALL})
+
 add_executable(read_diag_rad.exe read_diag_rad.f90)
 set_target_properties( read_diag_rad.exe PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS_ALL})
 
