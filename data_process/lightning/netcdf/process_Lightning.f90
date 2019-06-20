@@ -102,7 +102,7 @@ program process_Lightning
   real(r_kind),allocatable:: rylat(:,:)    !
 
   integer :: numlightning,idate,iii
-  integer,parameter :: maxsave=100000
+  integer,parameter :: maxsave=1000000
   real,allocatable:: savelon(:)    !
   real,allocatable:: savelat(:)    !
 
@@ -194,12 +194,6 @@ program process_Lightning
     call GET_DIM_ATT_NLDN(lightsngle,numStrike)
     write(*,*) 'number of strikes=', nt, numStrike
 
-    numNLDN_all=numNLDN_all+numStrike
-    if(numNLDN_all > maxsave) then
-      write(*,*) 'too many raw obs'
-      cycle
-    endif
-
     allocate(llon(numStrike))
     allocate(llat(numStrike))
     allocate(ltime(numStrike))
@@ -210,8 +204,11 @@ program process_Lightning
     do i=1,numStrike
 !     write(*,*) i, llon(i),llat(i),ltime(i),lStrike(i)
        iii=iii+1
-       savelon(iii)=llon(i)
-       savelat(iii)=llat(i)
+       if(iii < maxsave) then
+          savelon(iii)=llon(i)
+          savelat(iii)=llat(i)
+          numNLDN_all=iii
+       endif
     enddo
 !
 !  check quality
@@ -348,7 +345,6 @@ program process_Lightning
    write(6,*) ' write lightning in BUFR'
    call write_bufr_lightning(1,nlon,nlat,numlightning,lightning_out,idate)
 
-   write(6,*) "=== RAPHRRR PREPROCCESS SUCCESS ==="
 !  call MPI_FINALIZE(ierror)
 !
 end program process_Lightning 
