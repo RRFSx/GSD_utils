@@ -168,7 +168,7 @@ if(mype==0) then
 
    do j=1,nlat
       do i=1,nlon
-         if (fvmask(i,j) > 0. .and. fvsst(i,j) .ge. -100.0) then
+         if (fvmask(i,j) > 0. .and. fvsst(i,j) .ge. -90.0) then
             hrrrice(i,j) = fvice(i,j)
             hrrrsst(i,j) = fvsst(i,j) + 273.15
             hrrrsfcT(i,j) = fvsst(i,j) + 273.15
