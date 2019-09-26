@@ -12,7 +12,9 @@
 dir_root=$(pwd)
 
 source /etc/profile.d/modules.sh
-if [[ -d /scratch3 ]] ; then ### theia
+if [[ -d /scratch1 ]] ; then ### hera
+    modulefile="/home/rtrr/PARM_EXEC/modulefiles/modulefile.hera.GSI_UPP_WRF"
+elif [[ -d /scratch3 ]] ; then ### theia
     modulefile="/home/rtrr/PARM_EXEC/modulefiles/modulefile.theia.GSI_UPP_WRF"
 elif [[ -d /jetmon ]] ; then ### jet
     modulefile="/home/rtrr/PARM_EXEC/modulefiles/modulefile.jet.GSI_UPP_WRF"
