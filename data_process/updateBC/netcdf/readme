@@ -1,6 +1,0 @@
-To compile updateBC, run:
-
-make -f makefile all
-
-Note, need to make sure configure.wrf include updated environmental setups.
-

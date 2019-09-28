@@ -61,7 +61,7 @@ commitID=`git log -1 | head -n1 |cut -c8-15`
 repoName=`git config --get remote.origin.url | cut -d: -f2`
 datestamp=`date +%Y%m%d`
 ## declare an array variable
-declare -a exeList=("full_cycle_surface.exe" "gen_annual_maxmin_GVF.exe" "process_FVCOM.exe" "process_Lightning_bufr.exe" "process_Lightning.exe" "process_Lightning_nc.exe" "process_NESDIS_imssnow.exe" "process_NSSL_mosaic.exe" "process_satcast_netcdf.exe" "process_SST.exe" "process_tamdar_netcdf.exe" "rap_process_cloud.exe" "read_diag_conv.exe" "read_diag_rad.exe" "ref2tten.exe" "update_GVF.exe" "count_obs.exe")
+declare -a exeList=("full_cycle_surface.exe" "gen_annual_maxmin_GVF.exe" "process_FVCOM.exe" "process_Lightning_bufr.exe" "process_Lightning.exe" "process_Lightning_nc.exe" "process_NESDIS_imssnow.exe" "process_NSSL_mosaic.exe" "process_satcast_netcdf.exe" "process_SST.exe" "process_tamdar_netcdf.exe" "rap_process_cloud.exe" "read_diag_conv.exe" "read_diag_rad.exe" "ref2tten.exe" "update_GVF.exe" "count_obs.exe" "da_update_bc.exe")
 cd bin
 for i in "${exeList[@]}"; do
   ln -snf $i ${i}_${repoName}_${commitID}_${datestamp}

@@ -1,15 +1,3 @@
-#if ( HYBRID_COORD==1 ) 
-#  define mu2(...) (c1(k)*XXPCVXX(__VA_ARGS__))
-#  define XXPCVXX(...) mu2(__VA_ARGS__)
-
-#  define mu(...) (c1(k)*XXPCXX(__VA_ARGS__))
-#  define XXPCXX(...) mu(__VA_ARGS__)
-
-#  define mub(...) (c1(k)*XXPCBXX(__VA_ARGS__)+c2(k))
-#  define XXPCBXX(...) mub(__VA_ARGS__)
-#endif
-
-
 program da_update_bc
 
    !-----------------------------------------------------------------------
@@ -68,7 +56,7 @@ program da_update_bc
 
    real, allocatable, dimension(:,:,:) :: u, v, u2, v2
 
-   real, allocatable, dimension(:,  :) :: mu, mub, msfu, msfv, msfm, &
+   real, allocatable, dimension(:,  :) :: mu, mub, msfu, msfv, msfm,slice, &
                                           mu2, tend2d, scnd2d, frst2d, full2d
 
    real, allocatable, dimension(:,  :) :: tsk, tsk_wrfvar
@@ -91,7 +79,11 @@ program da_update_bc
    logical :: debug, update_lateral_bdy, update_low_bdy, update_lsm, keep_tsk_wrf
    logical :: keep_snow_wrf, var4d_lbc
 
-   real :: bdyfrq, bdyfrqini
+   integer(8) :: bdyfrq, bdyfrqini
+   real :: uvMAX, uvMIN, diff, gradThresh
+   real :: uvTendMAX, uvTendMIN, tTendMAX, tTendMIN, qTendMAX, qTendMIN
+   integer :: gradPTs, kk, ii, k2, i2, boxsizehalf, imax, imin, kmax, kmin
+   logical :: llimit, l_limit_uv, l_limit_t, l_limit_q
 
    character(len=512) :: wrfvar_output_file    ! obsolete. Kept for backward compatibility
    logical            :: cycling, low_bdy_only ! obsolete. Kept for backward compatibility
@@ -107,7 +99,11 @@ program da_update_bc
                             wrf_input, domain_id, var4d_lbc, &
                             debug, update_lateral_bdy, update_low_bdy, update_lsm, &
                             keep_tsk_wrf, keep_snow_wrf, iswater, &
-                            wrfvar_output_file, cycling, low_bdy_only
+                            wrfvar_output_file, cycling, low_bdy_only, &
+                            l_limit_uv,uvTendMAX,uvTendMIN, &
+                            uvMAX,uvMIN, gradPTs,gradThresh,boxsizehalf, &
+                            l_limit_t, tTendMAX, tTendMIN, &
+                            l_limit_q, qTendMAX, qTendMIN
 
 !
 !**********************************************************************
@@ -144,6 +140,20 @@ if(mype==0) then
    wrfvar_output_file = 'OBSOLETE'
    cycling            = .false.
    low_bdy_only       = .false.
+   l_limit_uv=.false.
+   l_limit_t=.false.
+   l_limit_q=.false.
+   uvMAX=1.0E6
+   uvMIN=-1.0E6
+   gradPTs =3 
+   gradThresh=2.5E6
+   boxsizehalf=10 !10 grid points for half box side
+   uvTendMAX=400.0
+   uvTendMIN=-400.0
+   tTendMAX=400.0
+   tTendMIN=-400.0
+   qTendMAX=400.0
+   qTendMIN=-400.0
 
    !---------------------------------------------------------------------
    ! Read namelist
@@ -631,7 +641,7 @@ endif
          do l=1,dims(2)
             do j=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*bdyfrq
+                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*real(bdyfrq)
                if (var4d_lbc) scnd2d(j,l)=MU2(l,j)
                frst2d(j,l)=MU(l,j)
             end do
@@ -640,7 +650,7 @@ endif
          do l=1,dims(2)
             do j=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*bdyfrq
+                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*real(bdyfrq)
                if (var4d_lbc) scnd2d(j,l)=MU2(east_end-l,j)
                frst2d(j,l)=MU(east_end-l,j)
             end do
@@ -649,7 +659,7 @@ endif
          do l=1,dims(2)
             do i=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*bdyfrq
+                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*real(bdyfrq)
                if (var4d_lbc) scnd2d(i,l)=MU2(i,l)
                frst2d(i,l)=MU(i,l)
             end do
@@ -658,7 +668,7 @@ endif
          do l=1,dims(2)
             do i=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*bdyfrq
+                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*real(bdyfrq)
                if (var4d_lbc) scnd2d(i,l)=MU2(i,north_end-l)
                frst2d(i,l)=MU(i,north_end-l)
             end do
@@ -670,7 +680,7 @@ endif
       ! calculate new tendancy 
       do l=1,dims(2)
          do i=1,dims(1)
-            tend2d(i,l)=(scnd2d(i,l)-frst2d(i,l))/bdyfrqini
+            tend2d(i,l)=(scnd2d(i,l)-frst2d(i,l))/real(bdyfrqini)
          end do
       end do
 
@@ -837,8 +847,8 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))/msfm(i,j)
-                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*(mu2(i,j)+mub(i,j))/msfm(i,j)
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))/msfm(i,j)
+                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*((c1(k)*mu2(i,j))+(c1(k)*mub(i,j)+c2(k)))/msfm(i,j)
                end do
             end do
          end do
@@ -866,8 +876,8 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))
-                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*(mu2(i,j)+mub(i,j))
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))
+                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*((c1(k)*mu2(i,j))+(c1(k)*mub(i,j)+c2(k)))
                end do
             end do
          end do
@@ -898,8 +908,8 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))
-                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*(mu2(i,j)+mub(i,j))
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))
+                  if ( var4d_lbc ) full3d2(i,j,k)=full3d2(i,j,k)*((c1(k)*mu2(i,j))+(c1(k)*mub(i,j)+c2(k)))
                end do
             end do
          end do
@@ -928,14 +938,13 @@ endif
 
          ! Get variable at second time level
          if ( .not. var4d_lbc ) then
+            call da_get_var_3d_real_cdf( wrf_bdy_file, trim(var_name), frst3d, &
+                                     dims(1), dims(2), dims(3), 1, debug)
+            call da_get_var_3d_real_cdf( wrf_bdy_file, trim(vbt_name), tend3d, &
+                                     dims(1), dims(2), dims(3), 1, debug)
             if (time_level > 1) then
                call da_get_var_3d_real_cdf( wrf_bdy_file, trim(var_name), scnd3d, &
                                          dims(1), dims(2), dims(3), 2, debug)
-            else
-               call da_get_var_3d_real_cdf( wrf_bdy_file, trim(var_name), frst3d, &
-                                         dims(1), dims(2), dims(3), 1, debug)
-               call da_get_var_3d_real_cdf( wrf_bdy_file, trim(vbt_name), tend3d, &
-                                         dims(1), dims(2), dims(3), 1, debug)
             end if
          end if
 
@@ -943,9 +952,6 @@ endif
             write(unit=ori_unit, fmt='(a,i2,2x,2a/a,i2,2x,a,4i6)') &
                  'No.', m, 'Variable: ', trim(vbt_name), &
                  'ndims=', ndims, 'dims=', (dims(i), i=1,ndims)
-
-            call da_get_var_3d_real_cdf( wrf_bdy_file, trim(vbt_name), tend3d, &
-                                      dims(1), dims(2), dims(3), 1, debug)
 
             write(unit=ori_unit, fmt='(a, 10i12)') &
                  ' old ', (i, i=1,dims(3))
@@ -961,7 +967,7 @@ endif
             do k=1,dims(2)
             do j=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*bdyfrq
+               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*real(bdyfrq)
                if ( var4d_lbc ) scnd3d(j,k,l)=full3d2(l,j,k)
                frst3d(j,k,l)=full3d(l,j,k)
             end do
@@ -972,7 +978,7 @@ endif
             do k=1,dims(2)
             do j=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*bdyfrq
+               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*real(bdyfrq)
                if ( var4d_lbc ) scnd3d(j,k,l)=full3d2(east_end-l,j,k)
                frst3d(j,k,l)=full3d(east_end-l,j,k)
             end do
@@ -983,7 +989,7 @@ endif
             do k=1,dims(2)
             do i=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*bdyfrq
+               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*real(bdyfrq)
                if ( var4d_lbc )scnd3d(i,k,l)=full3d2(i,l,k)
                frst3d(i,k,l)=full3d(i,l,k)
             end do
@@ -994,7 +1000,7 @@ endif
             do k=1,dims(2)
             do i=1,dims(1)
                if (time_level < 2 .and. .not. var4d_lbc) &
-               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*bdyfrq
+               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*real(bdyfrq)
                if ( var4d_lbc ) scnd3d(i,k,l)=full3d2(i,north_end-l,k)
                frst3d(i,k,l)=full3d(i,north_end-l,k)
             end do
@@ -1008,17 +1014,92 @@ endif
 
          write(unit=stdout, fmt='(a, i3, 2a)') &
             'cal. tend: bdyname(', m, ')=', trim(vbt_name)
+         select case(trim(vbt_name))
+         case ('U_BTXS','U_BTXE','U_BTYS','U_BTYE','V_BTXS','V_BTXE','V_BTYS','V_BTYE');
+           llimit=.true.
+         case default;
+           llimit=.false.
+         end select
 
          ! calculate new tendancy 
+         allocate(slice(dims(1), dims(2)))
          do l=1,dims(3)
+            !!! find large horizontal gradient (> gradThresh) and modify them
+            !!! before the final computation of tend3d(:,:,:)
+            if (llimit .and. l_limit_uv) then
+              slice(:,:)=frst3d(:,:,l)
+              do k=1,dims(2)
+                 do i=gradPTs+1,dims(1)
+                    diff=slice(i,k)-slice(i-gradPTs,k)
+                    if (abs(diff) > gradThresh) then
+                      write(unit=stdout, fmt='(a,3i4,f12.3)') 'large gradient', i,k,l,diff
+                      ii=i
+                      kk=k
+
+                      kmax=min(kk+boxsizehalf,dims(2))
+                      kmin=max(1,kk-boxsizehalf)
+                      imax=min(ii+boxsizehalf,dims(1))
+                      imin=max(1,ii-boxsizehalf)
+                      do k2=kmin,kmax
+                        do i2=imin,imax
+                          if (slice(i2,k2) > uvMAX) then
+                            write(unit=stdout, fmt='(a,3i5,2e10.2)') 'UV capped(i,k,l):', i2,k2,l,slice(i2,k2), uvMAX
+                            slice(i2,k2)=uvMAX
+                          else if (slice(i2,k2)<uvMIN) then
+                            write(unit=stdout, fmt='(a,3i5,2e10.2)') 'UV bottomed(i,k,l):', i2,k2,l,slice(i2,k2), uvMIN
+                            slice(i2,k2)=uvMIN
+                          endif
+                        enddo
+                      enddo
+                    end if
+                 enddo
+              enddo
+              frst3d(:,:,l)=slice(:,:)
+            endif
+
             do k=1,dims(2)
                do i=1,dims(1)
 !tgs bdyfrqini - time interval between analysis time and second time in wrfbdy_d01
-                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/bdyfrqini
-!tgs                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/bdyfrq
+                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/real(bdyfrqini)
+!tgs                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/real(bdyfrq)
+
+                  !!! cap tendency to avoid model crash
+                  select case(trim(vbt_name))
+                  case ('U_BTXS','U_BTXE','U_BTYS','U_BTYE','V_BTXS','V_BTXE','V_BTYS','V_BTYE');
+                    if (l_limit_uv) then
+                      if (tend3d(i,k,l)>uvTendMAX) then
+                        write(unit=stdout, fmt='(a,3i5,2e10.2)') 'UV tendency capped(i,k,l):', i,k,l,tend3d(i,k,l),uvTendMAX
+                        tend3d(i,k,l)=uvTendMAX
+                      else if (tend3d(i,k,l)<uvTendMIN) then
+                        write(unit=stdout, fmt='(a,3i5,2e10.2)') 'UV tendency bottomed(i,k,l):', i,k,l,tend3d(i,k,l),uvTendMIN
+                        tend3d(i,k,l)=uvTendMIN
+                      end if
+                    end if
+                  case ('T_BTXS','T_BTXE','T_BTYS','T_BTYE');
+                    if (l_limit_t) then
+                      if (tend3d(i,k,l)>tTendMAX) then
+                        write(unit=stdout, fmt='(a,3i5,2e10.2)') 't tendency capped(i,k,l):', i,k,l,tend3d(i,k,l),tTendMAX
+                        tend3d(i,k,l)=tTendMAX
+                      else if (tend3d(i,k,l)<tTendMIN) then
+                        write(unit=stdout, fmt='(a,3i5,2e10.2)') 't tendency bottomed(i,k,l):', i,k,l,tend3d(i,k,l),tTendMIN
+                        tend3d(i,k,l)=tTendMIN
+                      end if
+                    end if
+                  case ('QVAPOR_BTXS','QVAPOR_BTXE','QVAPOR_BTYS','QVAPOR_BTYE');
+                    if (l_limit_q) then
+                      if (tend3d(i,k,l)>qTendMAX) then
+                        write(unit=stdout, fmt='(a,3i5,2e12.5)') 'q tendency capped(i,k,l):', i,k,l,tend3d(i,k,l),qTendMAX
+                        tend3d(i,k,l)=qTendMAX
+                      else if (tend3d(i,k,l)<qTendMIN) then
+                        write(unit=stdout, fmt='(a,3i5,2e12.5)') 'q tendency bottomed(i,k,l):', i,k,l,tend3d(i,k,l),qTendMIN
+                        tend3d(i,k,l)=qTendMIN
+                      end if
+                    end if
+                  end select
                end do
             end do
          end do
+         deallocate(slice)
 
          if (debug) then
             write(unit=new_unit, fmt='(a,i2,2x,2a/a,i2,2x,a,4i6)') &
@@ -1150,7 +1231,7 @@ endif
          do l=1,dims(2)
             do j=1,dims(1)
                if (time_level < 3) &
-                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*bdyfrq
+                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*real(bdyfrq)
                frst2d(j,l)=MU(l,j)
             end do
          end do
@@ -1158,7 +1239,7 @@ endif
          do l=1,dims(2)
             do j=1,dims(1)
                if (time_level < 3) &
-                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*bdyfrq
+                  scnd2d(j,l)=frst2d(j,l)+tend2d(j,l)*real(bdyfrq)
                frst2d(j,l)=MU(east_end-l,j)
             end do
          end do
@@ -1166,7 +1247,7 @@ endif
          do l=1,dims(2)
             do i=1,dims(1)
                if (time_level < 3) &
-                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*bdyfrq
+                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*real(bdyfrq)
                frst2d(i,l)=MU(i,l)
             end do
          end do
@@ -1174,7 +1255,7 @@ endif
          do l=1,dims(2)
             do i=1,dims(1)
                if (time_level < 3) &
-                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*bdyfrq
+                  scnd2d(i,l)=frst2d(i,l)+tend2d(i,l)*real(bdyfrq)
                frst2d(i,l)=MU(i,north_end-l)
             end do
          end do
@@ -1185,7 +1266,7 @@ endif
       ! calculate new tendancy 
       do l=1,dims(2)
          do i=1,dims(1)
-            tend2d(i,l)=(scnd2d(i,l)-frst2d(i,l))/bdyfrq
+            tend2d(i,l)=(scnd2d(i,l)-frst2d(i,l))/real(bdyfrq)
          end do
       end do
 
@@ -1320,7 +1401,7 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))/msfm(i,j)
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))/msfm(i,j)
                end do
             end do
          end do
@@ -1345,7 +1426,7 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))
                end do
             end do
          end do
@@ -1374,7 +1455,7 @@ endif
          do k=1,dims(3)
             do j=1,dims(2)
                do i=1,dims(1)
-                  full3d(i,j,k)=full3d(i,j,k)*(mu(i,j)+mub(i,j))
+                  full3d(i,j,k)=full3d(i,j,k)*((c1(k)*mu(i,j))+(c1(k)*mub(i,j)+c2(k)))
                end do
             end do
          end do
@@ -1434,7 +1515,7 @@ endif
             do k=1,dims(2)
             do j=1,dims(1)
                if (time_level < 3) &
-               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*bdyfrq
+               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*real(bdyfrq)
                frst3d(j,k,l)=full3d(l,j,k)
             end do
             end do
@@ -1444,7 +1525,7 @@ endif
             do k=1,dims(2)
             do j=1,dims(1)
                if (time_level < 3) &
-               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*bdyfrq
+               scnd3d(j,k,l)=frst3d(j,k,l)+tend3d(j,k,l)*real(bdyfrq)
                frst3d(j,k,l)=full3d(east_end-l,j,k)
             end do
             end do
@@ -1454,7 +1535,7 @@ endif
             do k=1,dims(2)
             do i=1,dims(1)
                if (time_level < 3) &
-               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*bdyfrq
+               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*real(bdyfrq)
                frst3d(i,k,l)=full3d(i,l,k)
             end do
             end do
@@ -1464,7 +1545,7 @@ endif
             do k=1,dims(2)
             do i=1,dims(1)
                if (time_level < 3) &
-               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*bdyfrq
+               scnd3d(i,k,l)=frst3d(i,k,l)+tend3d(i,k,l)*real(bdyfrq)
                frst3d(i,k,l)=full3d(i,north_end-l,k)
             end do
             end do
@@ -1482,7 +1563,7 @@ endif
          do l=1,dims(3)
             do k=1,dims(2)
                do i=1,dims(1)
-                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/bdyfrq
+                  tend3d(i,k,l)=(scnd3d(i,k,l)-frst3d(i,k,l))/real(bdyfrq)
                end do
             end do
          end do
