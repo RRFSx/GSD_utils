@@ -198,6 +198,36 @@ if(mype==0) then
   rmse_var='SNOWC'
   call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
 
+!  ------ update QVG
+  if_integer=.false.
+  rmse_var='QVG'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
+!  ------ update QCG
+  if_integer=.false.
+  rmse_var='QCG'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
+!  ------ update QFX
+  if_integer=.false.
+  rmse_var='QFX'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
+!  ------ update HFX
+  if_integer=.false.
+  rmse_var='HFX'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
+!  ------ update UST
+  if_integer=.false.
+  rmse_var='UST'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
+!  ------ update PBLH
+  if_integer=.false.
+  rmse_var='PBLH'
+  call update_netcdf_mass(dh1,dh2,DateStr1,DateStr2,rmse_var,if_integer)
+
   if( abs(timediff) < 0.01 ) then
 !  ------ update SST
       if_integer=.false.
