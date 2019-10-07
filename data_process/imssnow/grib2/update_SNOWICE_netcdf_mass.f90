@@ -104,6 +104,13 @@ subroutine update_SNOWICE_netcdf_mass(snowiceRR, xland, luse, nlon, nlat,xlandIM
   real(r_single),allocatable::seaice(:,:)
   integer(i_kind) wrf_real
 
+  real(r_single),allocatable::snowRRbk(:,:)
+  real(r_single),allocatable::snowhRRbk(:,:)
+  real(r_single),allocatable::snowcRRbk(:,:)
+  real(r_single),allocatable::tskinRRbk(:,:)
+  real(r_single),allocatable::tsnowRRbk(:,:)
+  real(r_single),allocatable::soiltempRRbk(:,:,:)
+  real(r_single),allocatable::surftempRRbk(:,:)
 !  surface parameters
 !                     ivgtyp(i,j)=24     int IVGTYP
 !                     isltyp(i,j)=16.    int ISLTYP
@@ -141,7 +148,7 @@ subroutine update_SNOWICE_netcdf_mass(snowiceRR, xland, luse, nlon, nlat,xlandIM
   RCP = R/Cp
   P0=100000.0 ! Pa
 !
-  fractional_seaice=0
+  fractional_seaice=1
   if ( fractional_seaice == 0 ) then
     xice_threshold = 0.5
     write(*,*) ' do not use fraction sea ice'
@@ -220,6 +227,14 @@ subroutine update_SNOWICE_netcdf_mass(snowiceRR, xland, luse, nlon, nlat,xlandIM
   allocate(tskin(nlon_regional,nlat_regional))
   allocate(tsnow(nlon_regional,nlat_regional))
   allocate(landmask_soilmoisture1(nlon_regional,nlat_regional))
+
+  allocate(snowRRbk(nlon_regional,nlat_regional))
+  allocate(snowhRRbk(nlon_regional,nlat_regional))
+  allocate(snowcRRbk(nlon_regional,nlat_regional))
+  allocate(tskinRRbk(nlon_regional,nlat_regional))
+  allocate(tsnowRRbk(nlon_regional,nlat_regional))
+  allocate(surftempRRbk(nlon_regional,nlat_regional))
+
 !  allocate(soilmoisture(nlon_regional,nlat_regional,nsig_soil_regional))
 !  allocate(soiltemp(nlon_regional,nlat_regional,nsig_soil_regional))
 
@@ -544,6 +559,7 @@ endif
 !
   write(6,*) '================================================='
   allocate(soiltemp(nlon_regional,nlat_regional,nsig_soil_regional))
+  allocate(soiltempRRbk(nlon_regional,nlat_regional,nsig_soil_regional))
   rmse_var='TSLB'
   call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
        start_index,end_index, WrfType, ierr    )
@@ -679,7 +695,16 @@ endif
   write(6,*) '================================================='
 
   call ext_ncd_ioclose(dh1, Status)
-
+!
+! save the RR background snow in snowRRbk
+!
+  snowRRbk=snow
+  snowhRRbk=snowh
+  snowcRRbk=snowc
+  tskinRRbk=tskin
+  tsnowRRbk=tsnow
+  soiltempRRbk=soiltemp
+  surftempRRbk=surftemp
 !
 !  trim snow
 !
@@ -703,213 +728,218 @@ endif
 !                    to 276 K. 
 !      if(precip(i,j) < 1.0e-12 .and. surftemp(i,j) > 280.0 ) then   ! make sure 
 !      if(precip(i,j) < 1.0e-12 .and. surftemp(i,j) > 276.0 ) then   ! make sure 
-      if(precip(i,j) < 1.0e-12) then   ! make sure 
-        write(6,*) 'trim snow',i,j,snow(i,j),precip(i,j),surftemp(i,j),snowiceRR(i,j) 
-       numtrimsnow=numtrimsnow+1
-        itr=i
-        jtr=j
+        if(precip(i,j) < 1.0e-12) then   ! make sure 
+          write(6,*) 'trim snow',i,j,snow(i,j),precip(i,j),surftemp(i,j),snowiceRR(i,j) 
+          numtrimsnow=numtrimsnow+1
+          itr=i
+          jtr=j
 
 ! save values of snow to be trimmed
-        snowtr=snow(i,j)
-        snowhtr=snowh(i,j)
-        snowctr=snowc(i,j)
-        snowtrimsum=snowtrimsum+snow(i,j)
+          snowtr=snow(i,j)
+          snowhtr=snowh(i,j)
+          snowctr=snowc(i,j)
+          snowtrimsum=snowtrimsum+snow(i,j)
 ! trim snow
-        snow(i,j) = 0.0
-        snowh(i,j) = 0.0
-        snowc(i,j) = 0.0
-      endif
+          snow(i,j) = 0.0
+          snowh(i,j) = 0.0
+          snowc(i,j) = 0.0
+        endif
       endif
 
 !tgs snow building
       if(snowiceRR(i,j) > 1.0e-12 .and. snow(i,j) == 0.0 ) then   !  underforecasted snow
-      if(surftemp(i,j) < 278.0 ) then   
-         write(6,*) 'build snow at i,j',i,j,'precip,surftemp,snowiceRR',precip(i,j),surftemp(i,j),snowiceRR(i,j)
+        if(surftemp(i,j) < 278.0 ) then   
+           write(6,*) 'build snow at i,j',i,j,'precip,surftemp,snowiceRR',precip(i,j),surftemp(i,j),snowiceRR(i,j)
 
-             snowsum = 0.
-             snowhsum = 0.
-             snowcsum = 0.
-             tskinsum = 0.
-             tsnowsum = 0.
-             soilt1sum = 0.
-             soilt2sum = 0.
-             soilt3sum = 0.
-             surftempsum = 0.
+           snowsum = 0.
+           snowhsum = 0.
+           snowcsum = 0.
+           tskinsum = 0.
+           tsnowsum = 0.
+           soilt1sum = 0.
+           soilt2sum = 0.
+           soilt3sum = 0.
+           surftempsum = 0.
 
-         numnb=0
-         ist=max(1,i-2)
-         iend=min(nlon,i+2)
-         jst=max(1,j-2)
-         jend=min(nlat,j+2)
-            do ii=ist,iend
-            do jj=jst,jend
-              if(int(xland(ii,jj)+0.01) == 1) then  ! land
-              if(ii.eq.itr.and.jj.eq.jtr) then 
+           numnb=0
+           ist=max(1,i-2)
+           iend=min(nlon,i+2)
+           jst=max(1,j-2)
+           jend=min(nlat,j+2)
+           do ii=ist,iend
+           do jj=jst,jend
+             if(int(xland(ii,jj)+0.01) == 1) then  ! land
+               if(ii.eq.itr.and.jj.eq.jtr) then 
 ! snow trimmed at the neighbor point
-               numnb=100
-              goto 222
-              endif
+                 numnb=100
+                 goto 222
+               endif
 
-          if(snow(ii,jj) > 1.) then
-            numnb = numnb + 1
-             snowsum = snowsum + snow(ii,jj)
-             snowhsum = snowhsum + snowh(ii,jj)
-             snowcsum = snowcsum + snowc(ii,jj) 
-             tskinsum = tskinsum + tskin(ii,jj)
-             tsnowsum = tsnowsum + tsnow(ii,jj)
-             soilt1sum = soilt1sum + soiltemp(ii,jj,1)
-             soilt2sum = soilt2sum + soiltemp(ii,jj,2)
-             soilt3sum = soilt3sum + soiltemp(ii,jj,3)
-             surftempsum = surftempsum + surftemp(ii,jj)
-          endif
-              endif
-            enddo
-            enddo
+               if(snowRRbk(ii,jj) > 1.) then
+                 numnb = numnb + 1
+                 snowsum = snowsum + snowRRbk(ii,jj)
+                 snowhsum = snowhsum + snowhRRbk(ii,jj)
+                 snowcsum = snowcsum + snowcRRbk(ii,jj) 
+                 tskinsum = tskinsum + tskinRRbk(ii,jj)
+                 tsnowsum = tsnowsum + tsnowRRbk(ii,jj)
+                 soilt1sum = soilt1sum + soiltempRRbk(ii,jj,1)
+                 soilt2sum = soilt2sum + soiltempRRbk(ii,jj,2)
+                 soilt3sum = soilt3sum + soiltempRRbk(ii,jj,3)
+                 surftempsum = surftempsum + surftempRRbk(ii,jj)
+               endif
+             endif
+           enddo
+           enddo
 
 ! compute averages for all neighbor land points
-         if(numnb.ge.1) then
-          snowav=snowsum/numnb
-          snowhav=snowhsum/numnb
-          snowcav=snowcsum/numnb
-          tskinav=tskinsum/numnb
-          tsnowav=tsnowsum/numnb
-          soilt1av=soilt1sum/numnb
-          soilt2av=soilt2sum/numnb
-          soilt3av=soilt3sum/numnb
-          surftempav=surftempsum/numnb
-    print *,'snow neighbors found, numnb =',numnb, &
-            'snowsum,snowav,snowhav,snowcav,tskinav,tsnowav,soilt1av,soilt2av,soilt3av,surftempav', &
-             snowsum,snowav,snowhav,snowcav,tskinav,tsnowav,soilt1av,soilt2av,soilt3av,surftempav
-         endif
+           if(numnb.ge.1) then
+             snowav=snowsum/numnb
+             snowhav=snowhsum/numnb
+             snowcav=snowcsum/numnb
+             tskinav=tskinsum/numnb
+             tsnowav=tsnowsum/numnb
+             soilt1av=soilt1sum/numnb
+             soilt2av=soilt2sum/numnb
+             soilt3av=soilt3sum/numnb
+             surftempav=surftempsum/numnb
+             print *,'snow neighbors found, numnb =',numnb, &
+               'snowsum,snowav,snowhav,snowcav,tskinav,tsnowav,soilt1av,soilt2av,soilt3av,surftempav', &
+                snowsum,snowav,snowhav,snowcav,tskinav,tsnowav,soilt1av,soilt2av,soilt3av,surftempav
+           endif
 
-  222   continue
+  222      continue
 
-       numbuildsnow=numbuildsnow+1
+           numbuildsnow=numbuildsnow+1
            if(numnb == 100) then ! use point with trimmed snow
-       numusetrim=numusetrim+1
-         print *,'trimmed snow at itr,jtr',itr,jtr,'is used to build snow at point i,j',i,j
-         print *,'snowtr, snowhtr, snowctr, tskin(itr,jtr), tsnow(itr,jtr)', &
+             numusetrim=numusetrim+1
+             print *,'trimmed snow at itr,jtr',itr,jtr,'is used to build snow at point i,j',i,j
+             print *,'snowtr, snowhtr, snowctr, tskin(itr,jtr), tsnow(itr,jtr)', &
                   snowtr, snowhtr, snowctr,tskin(itr,jtr),tsnow(itr,jtr)
-              if(snowhtr > 1.e-12) then
-                rhosn=max(76.9,min(500.,snowtr/snowhtr))
-                snow(i,j) = max(1.,snowtr) ! not less than 1 mm SWE
-                snowh(i,j) = snow(i,j)/rhosn
-                snowc(i,j) = min(1.,snow(i,j)/32.)
-                tskin(i,j) = tskin(itr,jtr)
-                tsnow(i,j) = min(tsnow(itr,jtr),272.)
-                soiltemp(i,j,1) = min(soiltemp(itr,jtr,1),272.)
-                soiltemp(i,j,2) = min(soiltemp(itr,jtr,2),272.5)
-                soiltemp(i,j,3) = min(soiltemp(itr,jtr,3),273.)
-              else
+             if(snowhtr > 1.e-12) then
+!                rhosn=max(76.9,min(500.,snowtr/snowhtr))
+!tgs 26jun18 - consistency with the changed limits of snow density in RUC LSM.
+! bug fix 12mar2019                rhosn=max(58.8,min(500.,snowav/snowhav))
+               rhosn=max(58.8,min(500.,snowtr/snowhtr))
+               snow(i,j) = max(1.,snowtr) ! not less than 1 mm SWE
+               snowh(i,j) = snow(i,j)/rhosn
+               snowc(i,j) = min(1.,snow(i,j)/32.)
+               tskin(i,j) = tskin(itr,jtr)
+               tsnow(i,j) = min(tsnow(itr,jtr),272.)
+               soiltemp(i,j,1) = min(soiltemp(itr,jtr,1),272.)
+               soiltemp(i,j,2) = min(soiltemp(itr,jtr,2),272.5)
+               soiltemp(i,j,3) = min(soiltemp(itr,jtr,3),273.)
+             else
 !tgs 22apr15 - this warning is OK if the GFS background snow is getting trimmed (cold-start).
 ! This warning in the cycled RAP and HRRR indicates a problem.
-                print *,'WARNING in snow build from the neighbor-point trimmed snow '
-                print *,'Set snow to min value,j,snowhtr',i,j,snowhtr
-              numbuildmin=numbuildmin+1
-                snow(i,j) = 1.0
-                snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
-                snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
-                tskin(i,j) = min(tskin(i,j),272.)
-                tsnow(i,j) = min(tsnow(i,j),272.)
-                soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
-                soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
-                soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
-              endif
+               print *,'WARNING in snow build from the neighbor-point trimmed snow '
+               print *,'Set snow to min value,j,snowhtr',i,j,snowhtr
+               numbuildmin=numbuildmin+1
+               snow(i,j) = 1.0
+               snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
+               snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
+               tskin(i,j) = min(tskin(i,j),272.)
+               tsnow(i,j) = min(tsnow(i,j),272.)
+               soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
+               soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
+               soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
+             endif
            else
 
              if(numnb.ge.1) then
-                if(snowhav > 1.e-12 .and. snowav > 1.e-12) then
-                  print *,'build snow based on neighbor points ',numnb
-                  rhosn=max(76.9,min(500.,snowav/snowhav))
-                  snow(i,j) = max(1.,snowav)
-                  snowh(i,j) = snow(i,j)/rhosn
-                  snowc(i,j) = min(1.,snow(i,j)/32.)
-                  tskin(i,j) = min(min(tskinav,tskin(i,j)),272.)
-                  tsnow(i,j) = min(min(tsnowav,tsnow(i,j)),272.)
-                  soiltemp(i,j,1) = min(min(soilt1av,soiltemp(i,j,1)),272.)
-                  soiltemp(i,j,2) = min(min(soilt2av,soiltemp(i,j,2)),272.5)
-                  soiltemp(i,j,3) = min(min(soilt3av,soiltemp(i,j,3)),273.)
-                else
+               if(snowhav > 1.e-12 .and. snowav > 1.e-12) then
+                 print *,'build snow based on neighbor points ',numnb
+!                  rhosn=max(76.9,min(500.,snowav/snowhav))
+!tgs 26jun18 - consistency with the changed limits of snow density in RUC LSM.
+                 rhosn=max(58.8,min(500.,snowav/snowhav))
+                 snow(i,j) = max(1.,snowav)
+                 snowh(i,j) = snow(i,j)/rhosn
+                 snowc(i,j) = min(1.,snow(i,j)/32.)
+                 tskin(i,j) = min(min(tskinav,tskin(i,j)),272.)
+                 tsnow(i,j) = min(min(tsnowav,tsnow(i,j)),272.)
+                 soiltemp(i,j,1) = min(min(soilt1av,soiltemp(i,j,1)),272.)
+                 soiltemp(i,j,2) = min(min(soilt2av,soiltemp(i,j,2)),272.5)
+                 soiltemp(i,j,3) = min(min(soilt3av,soiltemp(i,j,3)),273.)
+               else
 !tgs 22apr15 - this warning is OK if the GFS background snow is getting trimmed (cold-start).
 ! This warning in the cycled RAP and HRRR indicates a problem.
-               print *,' WARNING in snow build from the neighbors average '
-               print *,'Set snow to min value - i,j,snowhav,rhosn',i,j,snowhav,rhosn
-              numbuildmin=numbuildmin+1
-                snow(i,j) = 1.0
-                snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
-                snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
-                tskin(i,j) = min(tskin(i,j),272.)
-                tsnow(i,j) = min(tsnow(i,j),272.)
-                soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
-                soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
-                soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
-                endif
+                 print *,' WARNING in snow build from the neighbors average '
+                 print *,'Set snow to min value - i,j,snowhav,rhosn',i,j,snowhav,rhosn
+                 numbuildmin=numbuildmin+1
+                 snow(i,j) = 1.0
+                 snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
+                 snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
+                 tskin(i,j) = min(tskin(i,j),272.)
+                 tsnow(i,j) = min(tsnow(i,j),272.)
+                 soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
+                 soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
+                 soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
+               endif
              else
                print *,'set snow to min value'
-              numbuildmin=numbuildmin+1
-                snow(i,j) = 1.0  
-                snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
-                snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
-                tskin(i,j) = min(tskin(i,j),272.)
-                tsnow(i,j) = min(tsnow(i,j),272.)
-                soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
-                soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
-                soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
+               numbuildmin=numbuildmin+1
+               snow(i,j) = 1.0  
+               snowh(i,j) = 1.0/250. ! rhosn=250.,snowh[m]=snow[mm]/rhosn
+               snowc(i,j) = min(1.,snow(i,j)/32.) ! snowc=1 if snow=32mm 
+               tskin(i,j) = min(tskin(i,j),272.)
+               tsnow(i,j) = min(tsnow(i,j),272.)
+               soiltemp(i,j,1) = min(soiltemp(i,j,1),272.)
+               soiltemp(i,j,2) = min(soiltemp(i,j,2),272.5)
+               soiltemp(i,j,3) = min(soiltemp(i,j,3),273.)
              endif
-           endif
-         snowbuiltsum=snowbuiltsum+snow(i,j)
-         print *,'BUILD - snow,snowh,snowc,tskin,tsnow,soiltemp1,soiltemp2,soiltemp3', &
-         i,j,snow(i,j),snowh(i,j),snowc(i,j),tskin(i,j),tsnow(i,j),soiltemp(i,j,1),soiltemp(i,j,2),soiltemp(i,j,3)       
-      endif
+           endif  !  if(numnb == 100) then
+           snowbuiltsum=snowbuiltsum+snow(i,j)
+           print *,'BUILD - snow,snowh,snowc,tskin,tsnow,soiltemp1,soiltemp2,soiltemp3', &
+              i,j,snow(i,j),snowh(i,j),snowc(i,j),tskin(i,j),tsnow(i,j),soiltemp(i,j,1),soiltemp(i,j,2),soiltemp(i,j,3)       
+        endif
       endif
     endif
 
 ! limit snow depth not to exceed 50 m
-     if((snowh(i,j) >= 0. .and. snowh(i,j) <=50.0) .and. (snow(i,j)  <=20000. .and. snow(i,j)  >=0.) ) then
-     elseif(snowh(i,j) < 0. .or. snow(i,j)  < 0.) then
-            snowh(i,j)=0.
-            snow(i,j) = 0.
-     elseif(snowh(i,j) > 50. .or. snow(i,j)  > 20000.) then
-          print *,'Huge snow value i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
-             newvalue=0.0
-             newvalueh=0.0
-             num=0
-             numh=0
-             do jjj=j-1,j+1
-             do iii=i-1,i+1
-                write(*,*) iii,jjj,snowh(iii,jjj),snow(iii,jjj)
-                if(iii .ne. i .and. jjj .ne. j) then
-                  i4=min(max(iii,1),nlon)
-                  j4=min(max(jjj,1),nlat)
-                  newvalue=newvalue+snow(i4,j4)
-                  newvalueh=newvalueh+snowh(i4,j4)
-                  num=num+1
-                endif
-             enddo
-             enddo
-             if(num > 0 .and. newvalue < 100000.0 .and. newvalueh < 200.0) then
-                  snow(i,j)=newvalue/num
-                  snowh(i,j)=newvalueh/num
-             else
-                  snow(i,j)=snow(i-1,j-1)
-                  snowh(i,j)=snowh(i-1,j-1)
-             endif
+    if((snowh(i,j) >= 0. .and. snowh(i,j) <=50.0) .and. (snow(i,j)  <=20000. .and. snow(i,j)  >=0.) ) then
+    elseif(snowh(i,j) < 0. .or. snow(i,j)  < 0.) then
+      snowh(i,j)=0.
+      snow(i,j) = 0.
+    elseif(snowh(i,j) > 50. .or. snow(i,j)  > 20000.) then
+      print *,'Huge snow value i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
+      newvalue=0.0
+      newvalueh=0.0
+      num=0
+      numh=0
+      do jjj=j-1,j+1
+        do iii=i-1,i+1
+          write(*,*) iii,jjj,snowh(iii,jjj),snow(iii,jjj)
+          if(iii .ne. i .and. jjj .ne. j) then
+            i4=min(max(iii,1),nlon)
+            j4=min(max(jjj,1),nlat)
+            newvalue=newvalue+snow(i4,j4)
+            newvalueh=newvalueh+snowh(i4,j4)
+            num=num+1
+          endif
+        enddo
+      enddo
+      if(num > 0 .and. newvalue < 100000.0 .and. newvalueh < 200.0) then
+        snow(i,j)=newvalue/num
+        snowh(i,j)=newvalueh/num
+      else
+        snow(i,j)=snow(i-1,j-1)
+        snowh(i,j)=snowh(i-1,j-1)
+      endif
 
-          print *,'Corrected snow value i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
-     else
-          print *,'===>Error<===: strange point i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
-          snowh(i,j) = 0.0
-          snow(i,j)  = 0.0
-          snowc(i,j) = 0.0
-     endif
+      print *,'Corrected snow value i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
+    else
+      print *,'===>Error<===: strange point i,j,snowh(i,j),snow(i,j)',i,j,snowh(i,j),snow(i,j)
+      snowh(i,j) = 0.0
+      snow(i,j)  = 0.0
+      snowc(i,j) = 0.0
+    endif
 ! check consistency of snow variables after snow trim
-     if((snow(i,j) <= 0..and.snowh(i,j) > 0.) .or. (snowh(i,j) <=0..and.snow(i,j) > 0.)) then
-        print *,'Inconsistency of snow and snowh AFTER snow trim at i,j,snow,snowh', i,j,snow(i,j),snowh(i,j)
-        snow(i,j)  = 0.
-        snowh(i,j) = 0.
-        snowc(i,j) = 0.
-   print *,'Corrected snow and snowh at i,j,snow,snowh',i,j,snow(i,j),snowh(i,j)
-     endif 
+    if((snow(i,j) <= 0..and.snowh(i,j) > 0.) .or. (snowh(i,j) <=0..and.snow(i,j) > 0.)) then
+      print *,'Inconsistency of snow and snowh AFTER snow trim at i,j,snow,snowh', i,j,snow(i,j),snowh(i,j)
+      snow(i,j)  = 0.
+      snowh(i,j) = 0.
+      snowc(i,j) = 0.
+      print *,'Corrected snow and snowh at i,j,snow,snowh',i,j,snow(i,j),snowh(i,j)
+    endif 
   ENDDO
   ENDDO
 
@@ -923,7 +953,7 @@ endif
 !
 !  replace seaice and xland
 !
-if(1==1) then  ! turn off , use GFS sea ice
+if(1==2) then  ! turn off , use GFS sea ice
   num_seaice2water=0
   num_water2seaice=0
   DO J=1,nlat
@@ -934,81 +964,82 @@ if(1==1) then  ! turn off , use GFS sea ice
 !for MODIS
 !            ivgtyp(i,j)=luse(i,j)
 !            lu_index(i,j)=luse(i,j)
-            ivgtyp(i,j)=17
-            lu_index(i,j)=17
-            landmask(i,j)=0.
-            xland_rr(i,j)=2.
-            isltyp(i,j)=14
-            seaice(i,j)=snowiceRR(i,j)
-            num_seaice2water = num_seaice2water + 1
+        ivgtyp(i,j)=17
+        lu_index(i,j)=17
+        landmask(i,j)=0.
+        xland_rr(i,j)=2.
+        isltyp(i,j)=14
+        seaice(i,j)=snowiceRR(i,j)
+        num_seaice2water = num_seaice2water + 1
       elseif(seaice(i,j) < xice_threshold .and. snowiceRR(i,j) >= xice_threshold .and. surftemp(i,j) < 280.) then  ! turn old water into seaice
 ! for sea ice
 !for MODIS
-             ivgtyp(i,j)=15
-             lu_index(i,j)=15
-             landmask(i,j)=1.   
-             xland_rr(i,j)=1.     
-             isltyp(i,j)=16 
-             seaice(i,j)=snowiceRR(i,j)
-             num_water2seaice=num_water2seaice+1
+        ivgtyp(i,j)=15
+        lu_index(i,j)=15
+        landmask(i,j)=1.   
+        xland_rr(i,j)=1.     
+        isltyp(i,j)=16 
+        seaice(i,j)=snowiceRR(i,j)
+        num_water2seaice=num_water2seaice+1
        else
 
 !     if(i.eq.471.and.j.eq.297) print *,'set seaice to snowiceRR, seaice(i,j),snowiceRR(i,j)', &
 !                                  seaice(i,j),snowiceRR(i,j)
 !             seaice(i,j)=snowiceRR(i,j)
       endif
-!!! Security check for consistency of all land surface parameters on water/ice:
-      if(seaice(i,j) < xice_threshold) then
-!       if(i.eq.120.and.j.eq.410) print *,'in security check, water, no ice',i,j,landmask(i,j),xland_rr(i,j)
-!water
-!            ivgtyp(i,j)=16
-!            lu_index(i,j)=16
-! for MODIS
-!            ivgtyp(i,j)=luse(i,j)
-!            lu_index(i,j)=luse(i,j)
-            ivgtyp(i,j)=17
-            lu_index(i,j)=17
-            landmask(i,j)=0.
-            xland_rr(i,j)=2.
-            isltyp(i,j)=14
-      else
-!      if(i.eq.275.and.j.eq.530)print *,'in security check, water with ice',i,j,landmask(i,j),xland_rr(i,j)
-!water
-!             ivgtyp(i,j)=24
-!             lu_index(i,j)=24
-!for MODIS
-             ivgtyp(i,j)=15
-             lu_index(i,j)=15
-             landmask(i,j)=1.
-             xland_rr(i,j)=1.
-             isltyp(i,j)=16
-      endif
     else
 !land - nothing to do here
 !switch to MODIS for land
 !             ivgtyp(i,j)=luse(i,j)
 !             lu_index(i,j)=luse(i,j)
-        if(i.eq.350.and.j.eq.250)print *,'land',i,j,landmask(i,j),xland_rr(i,j)
+!        if(i.eq.350.and.j.eq.250)print *,'land',i,j,landmask(i,j),xland_rr(i,j)
 ! make sure landmask and xland are consistent for land
-             landmask(i,j)=1.
-             xland_rr(i,j)=1.
-        if(i.eq.350.and.j.eq.250)print *,'land after check',i,j,landmask(i,j),xland_rr(i,j)
+!             landmask(i,j)=1.
+!             xland_rr(i,j)=1.
+!        if(i.eq.350.and.j.eq.250)print *,'land after check',i,j,landmask(i,j),xland_rr(i,j)
     endif
   ENDDO
   ENDDO
   write(*,*) 'SUMMARY on seaice:'
   write(*,*) 'grid point from old seaice into water: ', num_seaice2water
   write(*,*) 'grid point from old water  into seaice: ', num_water2seaice 
-endif
+endif ! 1==2
+
+!!! Security check for consistency of all land surface parameters on water/ice:
+  DO J=1,nlat
+  DO I=1,nlon
+    if( int(xland(i,j)+0.01) == 0 ) then    ! water
+      if(seaice(i,j) < xice_threshold) then
+!       if(i.eq.120.and.j.eq.410) print *,'in security check, water, no ice',i,j,landmask(i,j),xland_rr(i,j)
+!water
+! for MODIS water category is 17
+            ivgtyp(i,j)=17
+            lu_index(i,j)=17
+            landmask(i,j)=0.
+            xland_rr(i,j)=2.
+            isltyp(i,j)=14 ! STASGO water
+      else
+!      if(i.eq.275.and.j.eq.530)print *,'in security check, water with ice',i,j,landmask(i,j),xland_rr(i,j)
+!ice
+!for MODIS ice category is 15
+             ivgtyp(i,j)=15
+             lu_index(i,j)=15
+             landmask(i,j)=1.
+             xland_rr(i,j)=1.
+             isltyp(i,j)=16 ! STASGO ice
+      endif
+    endif  ! water
+  ENDDO
+  ENDDO
 !
 !  get rid of snow on water
 !
   DO J=1,nlat
   DO I=1,nlon
     if( int(xland(i,j)+0.01) == 0 ) then    ! water
-    do k=1,nsoil
-       soilmoisture(i,j,k)=1.
-    enddo
+      do k=1,nsoil
+         soilmoisture(i,j,k)=1.
+      enddo
 !    if( abs(landmask_soilmoisture1(i,j) -1.0) < 0.00001 ) then    ! water
       if( seaice(i,j) < 0.001 .and. snow(i,j) > 0.0 ) then  ! snow on water
         snow(i,j) = 0.0
@@ -1028,9 +1059,9 @@ endif
   flnm1='wrf_inout'
   call ext_ncd_open_for_update( trim(flnm1), 0, 0, "", dh1, Status)
   if ( Status /= 0 )then
-     write(6,*)'UPDATE_NETCDF_MASS:  problem with flnm1 = ',&
-          trim(flnm1),', Status = ', Status
-     stop 75
+    write(6,*)'UPDATE_NETCDF_MASS:  problem with flnm1 = ',&
+         trim(flnm1),', Status = ', Status
+    stop 75
   endif
      
 !-------------  get date info
@@ -1108,27 +1139,27 @@ endif
        ierr                                 )
 
   write(6,*) '================================================='
-  field2=seaice
-  write(6,*)' max,min sea ice=',maxval(field2),minval(field2)
-  rmse_var='SEAICE'
-  call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
-       start_index,end_index1, WrfType, ierr    )
-  write(6,*)' rmse_var=',trim(rmse_var)
-  write(6,*)' ordering=',ordering
-  write(6,*)' WrfType,WRF_REAL=',WrfType,WRF_REAL
-  write(6,*)' ndim1=',ndim1
-  write(6,*)' staggering=',staggering
-  write(6,*)' start_index=',start_index
-  write(6,*)' end_index1=',end_index1
-  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
-       field2,WRF_REAL,0,0,0,ordering,           &
-       staggering, dimnames ,               &
-       start_index,end_index1,               & !dom
-       start_index,end_index1,               & !mem
-       start_index,end_index1,               & !pat
-       ierr                                 )
-
-  write(6,*) '================================================='
+!  field2=seaice
+!  write(6,*)' max,min sea ice=',maxval(field2),minval(field2)
+!  rmse_var='SEAICE'
+!  call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
+!       start_index,end_index1, WrfType, ierr    )
+!  write(6,*)' rmse_var=',trim(rmse_var)
+!!  write(6,*)' ordering=',ordering
+!  write(6,*)' WrfType,WRF_REAL=',WrfType,WRF_REAL
+!  write(6,*)' ndim1=',ndim1
+!!  write(6,*)' staggering=',staggering
+!  write(6,*)' start_index=',start_index
+!  write(6,*)' end_index1=',end_index1
+!!  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
+!       field2,WRF_REAL,0,0,0,ordering,           &
+!       staggering, dimnames ,               &
+!       start_index,end_index1,               & !dom
+!!       start_index,end_index1,               & !mem
+!       start_index,end_index1,               & !pat
+!       ierr                                 )
+!!
+!  write(6,*) '================================================='
   field2=snowc
   write(6,*)' max,min snowc=',maxval(field2),minval(field2)
   rmse_var='SNOWC'
@@ -1348,7 +1379,7 @@ endif
 end subroutine update_SNOWICE_netcdf_mass
 
 SUBROUTINE wrf_debug( level , str )
-  USE module_wrf_error
+!  USE module_wrf_error
   IMPLICIT NONE
   CHARACTER*(*) str
   INTEGER , INTENT (IN) :: level
