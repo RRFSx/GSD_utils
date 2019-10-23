@@ -56,10 +56,10 @@ program da_update_bc
 
    real, allocatable, dimension(:,:,:) :: u, v, u2, v2
 
-   real, allocatable, dimension(:,  :) :: mu, mub, msfu, msfv, msfm,slice, &
+   real, allocatable, dimension(:,  :) :: mu, mub, msfu, msfv, msfm,       &
                                           mu2, tend2d, scnd2d, frst2d, full2d
 
-   real, allocatable, dimension(:,  :) :: tsk, tsk_wrfvar
+   real, allocatable, dimension(:,  :) :: tsk, tsk_wrfvar,slice,tem
    real, allocatable, dimension(:,:)   :: snow, snowc, snowh
 
    integer           :: chlvl,cflvl
@@ -80,10 +80,16 @@ program da_update_bc
    logical :: keep_snow_wrf, var4d_lbc
 
    integer(8) :: bdyfrq, bdyfrqini
-   real :: uvMAX, uvMIN, diff, gradThresh
+   real :: uvMAX, uvMIN, diff, gradThresh, multiple
    real :: uvTendMAX, uvTendMIN, tTendMAX, tTendMIN, qTendMAX, qTendMIN
    integer :: gradPTs, kk, ii, k2, i2, boxsizehalf, imax, imin, kmax, kmin
-   logical :: llimit, l_limit_uv, l_limit_t, l_limit_q
+   logical :: l_uv, l_limit_uv, l_limit_t, l_limit_q, l_limit_uvgrad
+   logical :: update_fld, update_tend, l_critical
+   integer :: smooth_loops ! do smoothing multiple times
+   integer :: smooth_pts   ! 0-none, 1-9pts, 2-25pts, 3-49pts
+   integer :: smoothTrigger   ! when >smoothTrigger large shear points found, do smoothing
+   integer :: criticalTrigger ! when >criticalTrigger large shear points found,skip updating current variable
+   integer :: knt_shear, knt_shear_max
 
    character(len=512) :: wrfvar_output_file    ! obsolete. Kept for backward compatibility
    logical            :: cycling, low_bdy_only ! obsolete. Kept for backward compatibility
@@ -101,9 +107,11 @@ program da_update_bc
                             keep_tsk_wrf, keep_snow_wrf, iswater, &
                             wrfvar_output_file, cycling, low_bdy_only, &
                             l_limit_uv,uvTendMAX,uvTendMIN, &
-                            uvMAX,uvMIN, gradPTs,gradThresh,boxsizehalf, &
+                            l_limit_uvgrad,uvMAX,uvMIN, gradPTs,gradThresh,boxsizehalf, &
                             l_limit_t, tTendMAX, tTendMIN, &
-                            l_limit_q, qTendMAX, qTendMIN
+                            l_limit_q, qTendMAX, qTendMIN, &
+                            update_fld, update_tend,       &
+                            smooth_pts,smooth_loops,smoothTrigger,criticalTrigger
 
 !
 !**********************************************************************
@@ -141,8 +149,15 @@ if(mype==0) then
    cycling            = .false.
    low_bdy_only       = .false.
    l_limit_uv=.false.
+   l_limit_uvgrad=.false.
    l_limit_t=.false.
    l_limit_q=.false.
+   update_fld=.true.
+   update_tend=.true.
+   smooth_pts=0
+   smooth_loops=0
+   smoothTrigger=500
+   criticalTrigger=50
    uvMAX=1.0E6
    uvMIN=-1.0E6
    gradPTs =3 
@@ -154,6 +169,7 @@ if(mype==0) then
    tTendMIN=-400.0
    qTendMAX=400.0
    qTendMIN=-400.0
+   knt_shear=0
 
    !---------------------------------------------------------------------
    ! Read namelist
@@ -1016,18 +1032,36 @@ endif
             'cal. tend: bdyname(', m, ')=', trim(vbt_name)
          select case(trim(vbt_name))
          case ('U_BTXS','U_BTXE','U_BTYS','U_BTYE','V_BTXS','V_BTXE','V_BTYS','V_BTYE');
-           llimit=.true.
+           l_uv=.true.
          case default;
-           llimit=.false.
+           l_uv=.false.
          end select
 
          ! calculate new tendancy 
          allocate(slice(dims(1), dims(2)))
+         allocate(tem(dims(1), dims(2)))
+         knt_shear_max=0
          do l=1,dims(3)
             !!! find large horizontal gradient (> gradThresh) and modify them
             !!! before the final computation of tend3d(:,:,:)
-            if (llimit .and. l_limit_uv) then
-              slice(:,:)=frst3d(:,:,l)
+            !to check if there is deep layer of sharp gradient
+            slice(:,:)=frst3d(:,:,l)
+            if (l_uv) then
+              knt_shear = 0
+              do k=1,dims(2)
+                 do i=gradPTs+1,dims(1)
+                    diff=slice(i,k)-slice(i-gradPTs,k) 
+                    multiple=sign(1.0,slice(i,k)) * sign(1.0,slice(i-gradPTs,k) )
+                    if (abs(diff) > gradThresh .and. multiple < 0.0 ) then
+                      knt_shear=knt_shear+1
+                      write(unit=stdout, fmt='(a,3i4,f16.1)') 'large shear (i,k,l,diff):', i,k,l,diff
+                      if (knt_shear > knt_shear_max) knt_shear_max=knt_shear
+                    endif
+                 enddo
+              enddo
+              write(unit=stdout, fmt='(2a,i3,i10)') 'total points of large shear: ', trim(var_name), l, knt_shear
+            endif
+            if (l_uv .and. l_limit_uvgrad) then
               do k=1,dims(2)
                  do i=gradPTs+1,dims(1)
                     diff=slice(i,k)-slice(i-gradPTs,k)
@@ -1053,6 +1087,26 @@ endif
                       enddo
                     end if
                  enddo
+              enddo
+              frst3d(:,:,l)=slice(:,:)
+            endif
+            if (l_uv .and. smooth_loops > 0 .and. smooth_pts >0 .and. knt_shear > smoothTrigger) then
+              write(unit=stdout,fmt='(a,4i6)') 'smoothing wind field(loops,pts,knt_shear,trigger)', &
+                  smooth_loops, smooth_pts,knt_shear,smoothTrigger
+              slice(:,:)=frst3d(:,:,l)
+              do k2=1,smooth_loops
+                tem=slice
+                do k=1+smooth_pts,dims(2)-smooth_pts
+                  do i=1+smooth_pts,dims(1)-smooth_pts
+                     tem(i,k)=0.0
+                     do kk=k-smooth_pts, k+smooth_pts
+                        do ii=i-smooth_pts, i+smooth_pts
+                           tem(i,k)= tem(i,k) + slice(ii,kk)/( (2*smooth_pts+1)**2 )
+                        enddo
+                     enddo 
+                  enddo
+                enddo
+                slice=tem
               enddo
               frst3d(:,:,l)=slice(:,:)
             endif
@@ -1100,6 +1154,7 @@ endif
             end do
          end do
          deallocate(slice)
+         deallocate(tem)
 
          if (debug) then
             write(unit=new_unit, fmt='(a,i2,2x,2a/a,i2,2x,a,4i6)') &
@@ -1116,10 +1171,22 @@ endif
          end if
 
          ! output new variable at first time level
-         call da_put_var_3d_real_cdf( wrf_bdy_file, trim(var_name), frst3d, &
-                                dims(1), dims(2), dims(3), 1, debug)
-         call da_put_var_3d_real_cdf( wrf_bdy_file, trim(vbt_name), tend3d, &
+         l_critical=.false.
+         if (l_uv) then
+            if (knt_shear_max > criticalTrigger) then
+              l_critical=.true.
+              print*, 'critical condition met, skip updating ', trim(var_name),&
+               ' ', trim(vbt_name) 
+            endif
+         endif
+         if (.not. l_critical) then
+           if (update_fld) &
+           call da_put_var_3d_real_cdf( wrf_bdy_file, trim(var_name), frst3d, &
+                                  dims(1), dims(2), dims(3), 1, debug)
+           if (update_tend) &
+           call da_put_var_3d_real_cdf( wrf_bdy_file, trim(vbt_name), tend3d, &
                                    dims(1), dims(2), dims(3), 1, debug)
+         endif
 
          deallocate(frst3d)
          deallocate(scnd3d)
