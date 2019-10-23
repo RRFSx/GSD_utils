@@ -156,8 +156,8 @@ if(mype==0) then
    update_tend=.true.
    smooth_pts=0
    smooth_loops=0
-   smoothTrigger=500
-   criticalTrigger=50
+   smoothTrigger=50000
+   criticalTrigger=50000
    uvMAX=1.0E6
    uvMIN=-1.0E6
    gradPTs =3 
