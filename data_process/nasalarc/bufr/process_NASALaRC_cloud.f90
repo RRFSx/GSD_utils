@@ -31,6 +31,7 @@ program  process_NASALaRC_cloud
   use misc_definitions_module , only : PROJ_LC, PROJ_ROTLL
   use constants_module ,only : EARTH_RADIUS_M
   use constants, only: init_constants_derived, deg2rad
+  !#use constants, only: satidgoeswest,satidgoeseast
   use gridmod_gsimap ,only : nlon,nlat,init_general_transform,tll2xy,txy2ll
 
   implicit none
@@ -39,7 +40,9 @@ program  process_NASALaRC_cloud
 !
 ! MPI variables
   integer :: npe, mype,ierror
-!
+!SATID
+  integer, parameter :: satidgoeswest=259  ! GOES 15
+  integer, parameter :: satidgoeseast=270  ! GOES 16
   real     :: rad2deg = 180.0/3.1415926
 !
   character*256 output_file
@@ -223,7 +226,7 @@ program  process_NASALaRC_cloud
 !  read in the NASA LaRC cloud data
 !  maxobs=(1800*700 + 1500*850)*1
   satfile='NASA_LaRC_cloud.bufr'
-  call read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
+  call read_NASALaRC_cloud_bufr_survey(satfile,satidgoeseast,satidgoeswest,east_time, west_time,maxobs)
   allocate(lat_l(maxobs))
   allocate(lon_l(maxobs))
   allocate(ptop_l(maxobs))
@@ -236,7 +239,7 @@ program  process_NASALaRC_cloud
   lon_l =-9.
   lwp_l =-9.
   phase_l=-9
-  call read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time,   &   
+  call read_NASALaRC_cloud_bufr(satfile,atime,satidgoeseast,satidgoeswest,east_time, west_time,   &   
             maxobs,numobs, ptop_l, teff_l, phase_l, lwp_l,lat_l, lon_l)
 
      write(6,*)'LaRC ptop =', (ptop_l(j),j=1,numobs,5000)
@@ -431,7 +434,7 @@ program  process_NASALaRC_cloud
 !
 end program process_NASALaRC_cloud
 
-subroutine read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time, &
+subroutine read_NASALaRC_cloud_bufr(satfile,atime,satidgoeseast,satidgoeswest,east_time, west_time, &
              maxobs,numobs,ptop, teff, phase, lwp_iwp,lat, lon)
 !
 !   PRGMMR: Ming Hu          ORG: GSD        DATE: 2010-07-09
@@ -465,7 +468,7 @@ subroutine read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time, &
 !
 !
 !
-  character(80):: hdstr='YEAR  MNTH  DAYS HOUR  MINU  SECO'
+  character(80):: hdstr='YEAR  MNTH  DAYS HOUR  MINU  SECO SAID'
   character(80):: obstr='CLATH  CLONH CLDP HOCT CDTP EBBTH VILWC'
 ! CLDP     |  CLOUD PHASE
 ! HOCB     | HEIGHT OF BASE OF CLOUD
@@ -475,20 +478,25 @@ subroutine read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time, &
 ! EBBTH    | EQUIVALENT BLACK BODY TEMPERATURE  (KELVIN)
 ! VILWC    | VERTICALLY-INTEGRATED LIQUID WATER CONTENT
 
-  real(8) :: hdr(6),obs(7,1)
+  real(8) :: hdr(7),obs(7,1)
 
   INTEGER :: ireadmg,ireadsb
 
   character(8) subset
   integer :: unit_in=10,idate,iret,nmsg,ntb
+  integer :: satid
 
 !
 !  For NASA LaRC 
 !
-  CHARACTER*40   satfile
-  integer(i_kind) :: east_time, west_time
+  CHARACTER*40,intent(in) ::   satfile
+!SATID
+  integer,intent(in) :: satidgoeswest
+  integer,intent(in) :: satidgoeseast  
+  integer(i_kind),intent(in) :: east_time, west_time
 
-  INTEGER ::   maxobs, numobs  ! dimension
+  INTEGER,intent(in)  ::   maxobs! dimension
+  INTEGER,intent(out) ::   numobs  ! dimension
   INTEGER(i_kind) ::  obs_time
   REAL*8      time_offset
   REAL*4      lat                            (  maxobs)
@@ -519,38 +527,40 @@ subroutine read_NASALaRC_cloud_bufr(satfile,atime,east_time, west_time, &
    msg_report: do while (ireadmg(unit_in,subset,idate) == 0)
      nmsg=nmsg+1
      sb_report: do while (ireadsb(unit_in) == 0)
-       call ufbint(unit_in,hdr,6,1,iret,hdstr)
+       call ufbint(unit_in,hdr,7,1,iret,hdstr)
        obs_time=int((hdr(1)-2000.0)*100000000+hdr(2)*1000000+hdr(3)*10000+hdr(4)*100+hdr(5))
-       call ufbint(unit_in,obs,7,1,iret,obstr)
-       if(obs_time == east_time .or. obs_time == west_time ) then
-       if(abs(obs(3,1) -4.0) < 1.e-4) then
-         obs(7,1)=99999. ! clear
-         obs(6,1)=99999. ! clear
-         obs(5,1)=101300.0  ! clear (hpa)
-       endif
-       if(obs(5,1) < 1.e7 .and. obs(5,1) > 100.0 ) then
-       if(obs(6,1) < 1.e7 .and. obs(6,1) > 10.0) then
-         ntb = ntb+1
-         if(ntb > maxobs) then
-           write(*,*) 'ALERT: need to increase maxobs',maxobs, ntb
-           ntb = maxobs
+       satid=int(hdr(7))
+       if( (obs_time == east_time .and. satid==satidgoeseast ) .or.  &
+           (obs_time == west_time .and. satid==satidgoeswest ) ) then
+         call ufbint(unit_in,obs,7,1,iret,obstr)
+         if(abs(obs(3,1) -4.0) < 1.e-4) then
+           obs(7,1)=99999. ! clear
+           obs(6,1)=99999. ! clear
+           obs(5,1)=101300.0  ! clear (hpa)
          endif
+         if(obs(5,1) < 1.e7 .and. obs(5,1) > 100.0 ) then
+         if(obs(6,1) < 1.e7 .and. obs(6,1) > 10.0) then
+           ntb = ntb+1
+           if(ntb > maxobs) then
+             write(*,*) 'ALERT: need to increase maxobs',maxobs, ntb
+             ntb = maxobs
+           endif
 
-         lwp_iwp(ntb)=99999.0
-         lat(ntb)=99999.0
-         lon(ntb)=99999.0
-         phase(ntb)=99999
-         teff(ntb)=99999.0
-         ptop(ntb)=99999.0
-         if(obs(1,1) < 1.e9) lat(ntb)=real(obs(1,1))
-         if(obs(2,1) < 1.e9) lon(ntb)=real(obs(2,1))
-         if(obs(3,1) < 1.e9) phase(ntb)=int(obs(3,1))
-         if(obs(7,1) < 1.e9) lwp_iwp(ntb)=real(obs(7,1))
-         if(obs(6,1) < 1.e9) teff(ntb)=real(obs(6,1))
-         if(obs(5,1) < 1.e9) ptop(ntb)=real(obs(5,1))/100.0 ! pa to hpa
+           lwp_iwp(ntb)=99999.0
+           lat(ntb)=99999.0
+           lon(ntb)=99999.0
+           phase(ntb)=99999
+           teff(ntb)=99999.0
+           ptop(ntb)=99999.0
+           if(obs(1,1) < 1.e9) lat(ntb)=real(obs(1,1))
+           if(obs(2,1) < 1.e9) lon(ntb)=real(obs(2,1))
+           if(obs(3,1) < 1.e9) phase(ntb)=int(obs(3,1))
+           if(obs(7,1) < 1.e9) lwp_iwp(ntb)=real(obs(7,1))
+           if(obs(6,1) < 1.e9) teff(ntb)=real(obs(6,1))
+           if(obs(5,1) < 1.e9) ptop(ntb)=real(obs(5,1))/100.0 ! pa to hpa
 
-       endif
-       endif
+         endif
+         endif
        endif   ! east_time, west_time
      enddo sb_report
    enddo msg_report
@@ -589,7 +599,7 @@ subroutine sortmed(p,n,is)
       return
 end subroutine sortmed
 
-subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
+subroutine read_NASALaRC_cloud_bufr_survey(satfile,satidgoeseast,satidgoeswest,east_time, west_time,maxobs)
 !
 !   PRGMMR: Ming Hu          ORG: GSD        DATE: 2010-07-09
 !
@@ -620,10 +630,8 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
 
   implicit none
 !
-!
-!
-  character(80):: hdstr='YEAR  MNTH  DAYS HOUR  MINU  SECO'
-  real(8) :: hdr(6)
+  character(80):: hdstr='YEAR  MNTH  DAYS HOUR  MINU  SECO  SAID'
+  real(8) :: hdr(7)
 
   INTEGER :: ireadmg,ireadsb
 
@@ -634,6 +642,9 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
 !  For NASA LaRC 
 !
   CHARACTER*40, intent(in)    ::   satfile
+!SATID
+  integer,intent(in) :: satidgoeswest
+  integer,intent(in) :: satidgoeseast  
   integer(i_kind),intent(out) :: east_time, west_time
   integer,intent(out) :: maxobs
 
@@ -645,16 +656,21 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
   integer(i_kind) :: num_obstime_all(max_obstime)
   integer(i_kind) :: num_subset_all(max_obstime)
   integer(i_kind) :: num_obstime_hh(max_obstime)
+  integer(i_kind) :: num_satid(max_obstime)
   integer(i_kind) :: num_obstime
 
 !
   character*10  atime
   integer :: i,ii,hhh
   integer :: numobs_east, numobs_west
+  integer :: satid
 !
 !**********************************************************************
 !
  num_obstime=0
+ num_satid=0
+ num_obstime_all=0
+ num_subset_all=0
  hhh=99
  open(24,file='NASA.bufrtable')
  open(unit_in,file=trim(satfile),form='unformatted')
@@ -666,10 +682,11 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
      ntb = 0
      nmsg=nmsg+1
      sb_report: do while (ireadsb(unit_in) == 0)
-       call ufbint(unit_in,hdr,6,1,iret,hdstr)
+       call ufbint(unit_in,hdr,7,1,iret,hdstr)
        obs_time=int((hdr(1)-2000.0)*100000000+hdr(2)*1000000+hdr(3)*10000+hdr(4)*100+hdr(5))
        hhh=int(hdr(5))
        ntb=ntb+1
+       satid=int(hdr(7))
      enddo sb_report
 ! message inventory
      if(num_obstime == 0 ) then
@@ -677,10 +694,11 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
        num_obstime_all(num_obstime)=obs_time
        num_obstime_hh(num_obstime)=hhh
        num_subset_all(num_obstime)= ntb
+       num_satid(num_obstime)=satid
      else
        ii=0
        DO i=1,num_obstime
-          if(num_obstime_all(i) == obs_time ) ii=i
+          if(num_obstime_all(i) == obs_time .and. num_satid(i)== satid) ii=i
        ENDDO
        if( ii > 0 .and. ii <=num_obstime) then
           num_subset_all(ii)=num_subset_all(ii) + ntb
@@ -694,29 +712,32 @@ subroutine read_NASALaRC_cloud_bufr_survey(satfile,east_time, west_time,maxobs)
           num_obstime_all(num_obstime)=obs_time
           num_obstime_hh(num_obstime)=hhh
           num_subset_all(num_obstime)=num_subset_all(num_obstime)+ntb
+          num_satid(num_obstime)=satid
        endif
      endif
    enddo msg_report
    write(*,*) 'message/reports num=',nmsg,ntb
  call closbf(unit_in)
 
- write(*,'(2x,a10,a10,a11)') 'time_level','subset_num'
+ write(*,'(2x,a15,a15,a15,a15)') 'time_level','satid','subset_num','hour'
  DO i=1,num_obstime
-   write(*,'(i2,i12,i11,i10)') i,num_obstime_all(i),num_subset_all(i),num_obstime_hh(i)
+   write(*,'(i2,i15,i15,i15,i15)') i,num_obstime_all(i),num_satid(i),num_subset_all(i),num_obstime_hh(i)
  ENDDO
-!  GOES EAST  : 1815, 1845, 1915, 2045
+!  GOES EAST  : 1815, 1845, 1915, 2045, no anymore, changed to 1830, 1900 just like WEST
 !  GOES WEST  : 1830, 1900, 2030
  east_time=0
  west_time=0
+ numobs_east=0
+ numobs_west=0
  DO i=1,num_obstime
    if(num_subset_all(i) > 10) then
-      if(num_obstime_hh(i) == 15 .or. num_obstime_hh(i) == 45 ) then
+      if(num_satid(i) == satidgoeseast ) then  
          if(east_time < num_obstime_all(i)) then
               east_time=num_obstime_all(i)
               numobs_east=num_subset_all(i)
          endif
       endif
-      if(num_obstime_hh(i) == 30 .or. num_obstime_hh(i) == 0 ) then
+      if(num_satid(i) == satidgoeswest ) then
          if(west_time < num_obstime_all(i)) then
              west_time=num_obstime_all(i)
              numobs_west=num_subset_all(i)
