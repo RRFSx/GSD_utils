@@ -44,6 +44,7 @@ program  process_NASALaRC_cloud
   integer, parameter :: satidgoeswest=259  ! GOES 15
   integer, parameter :: satidgoeseast=270  ! GOES 16
   real     :: rad2deg = 180.0/3.1415926
+  integer,parameter  :: boxMAX=10
 !
   character*256 output_file
 !
@@ -110,8 +111,13 @@ program  process_NASALaRC_cloud
   integer :: analysis_time
   integer :: ioption
   character(len=100) :: bufrfile
-  integer(i_kind) :: npts_rad
-  namelist/setup/ analysis_time, ioption, npts_rad,bufrfile
+  integer(i_kind) :: npts_rad, nptsx, nptsy
+  integer(i_kind) :: boxhalfx(boxMAX), boxhalfy(boxMAX)
+  real (r_kind)   :: boxlat0(boxMAX)
+  namelist/setup/ analysis_time, ioption, npts_rad,bufrfile, &
+     boxhalfx, boxhalfy, boxlat0
+   ! for area north of the latitude bigbox_lat0, a large radius npts_rad2 will be used.
+   ! this is to solve the cloud stripe issue in Alaska  -G. Ge Nov. 19, 2019 
 !
 !
 !  ** misc
@@ -124,7 +130,7 @@ program  process_NASALaRC_cloud
   logical     ::outside     ! .false., then point is inside x-y domain
                               ! .true.,  then point is outside x-y domain
 
-  integer i,j,k,ipt,jpt,cfov
+  integer i,j,k,ipt,jpt,cfov,ibox
   Integer nf_status,nf_fid,nf_vid
 
   integer :: NCID
@@ -150,6 +156,9 @@ program  process_NASALaRC_cloud
   analysis_time=2018051718
   bufrfile='NASALaRCCloudInGSI_bufr.bufr'
   npts_rad=1
+  boxhalfx=-1
+  boxhalfy=-1
+  boxlat0= 999.0 !don't use variable box by default
       ! * ioption = 1 is nearest neighrhood
       ! * ioption = 2 is median of cloudy fov
   ioption = 2
@@ -163,8 +172,10 @@ program  process_NASALaRC_cloud
     write(*,setup)
   else
     write(*,*) 'No namelist file exist, use default values'
-    write(*,*) "analysis_time,bufrfile,npts_rad,ioption" 
-    write(*,*) analysis_time, trim(bufrfile),npts_rad,ioption 
+    write(*,*) "analysis_time,bufrfile,npts_rad,ioption"
+    write(*,*) analysis_time, trim(bufrfile),npts_rad,ioption
+    write(*,*) "boxhalfx,boxhalfy,boxlat0"
+    write(*,*) boxhalfx,boxhalfy,boxlat0
   endif
  
 
@@ -261,7 +272,6 @@ program  process_NASALaRC_cloud
 !     Map each FOV onto RR grid points 
 ! -----------------------------------------------------------
 ! -----------------------------------------------------------
-     write(*,*) 'The number of impact point is=',npts_rad
      do ipt=1,numobs
        if (phase_l(ipt).ge.0) then
 !  Indicates there is some data (not missing)
@@ -277,12 +287,24 @@ program  process_NASALaRC_cloud
 ! * Compute RR grid x/y at lat/lon of cloud data
 ! -----------------------------------------------------------
 ! * XC,YC should be within RR boundary, i.e., XC,YC >0
+      !to determine npts
+      nptsx=npts_rad !by default
+      nptsy=npts_rad !by default
+      if (lat_l(ipt) > boxlat0(1) ) then
+        do ibox=1,boxMAX !to get the largest possible npts
+          if (lat_l(ipt) > boxlat0(ibox)) then
+            if (boxhalfx(ibox)>0) nptsx=boxhalfx(ibox)
+            if (boxhalfy(ibox)>0) nptsy=boxhalfy(ibox)
+          endif
+        enddo
+      endif
+      !write(*,*) 'The number of impact point nx,ny=',npts_rad, npts
 
          ii1 = int(xc+0.5)
          jj1 = int(yc+0.5)
-         do jj = max(1,jj1-npts_rad), min(nlat,jj1+npts_rad)
+         do jj = max(1,jj1-nptsy), min(nlat,jj1+nptsy)
          if (jj1-1.ge.1 .and. jj1+1.le.nlat) then
-         do ii = max(1,ii1-npts_rad), min(nlon,ii1+npts_rad)
+         do ii = max(1,ii1-nptsx), min(nlon,ii1+nptsx)
          if (ii1-1.ge.1 .and. ii1+1.le.nlon) then
 !         if(XC .ge. 1. .and. XC .lt. nlon .and.        &
 !            YC .ge. 1. .and. YC .lt. nlat) then
