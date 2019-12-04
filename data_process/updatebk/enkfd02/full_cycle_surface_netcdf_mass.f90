@@ -118,8 +118,13 @@ if(mype+1 <= numens) then
   out_SF_LAKE_PHYSICS=0
 !
   flnmbas="wrfinput_d02.mem"
-  write(flnm1,'(a,I4.4)') trim(flnmbas),mype+1
-  write(flnm2,'(a,I4.4)') trim(flnmbas),mype+1
+  if( numens == 1) then
+     flnm1='wrfinput_d02'
+     flnm2='wrfinput_d02'
+  else
+     write(flnm1,'(a,I4.4)') trim(flnmbas),mype+1
+     write(flnm2,'(a,I4.4)') trim(flnmbas),mype+1
+  endif
   flnm3='wrfout_d01_save'
 !
   STATUS=NF_OPEN(trim(flnm3),0,NCID)
