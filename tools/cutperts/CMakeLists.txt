@@ -1,10 +1,11 @@
 set(ENV{CC} "icc")
 set(ENV{CXX} "icpc")
-set(ENV{FC} "mpif90 -f90=ifort")
+#set(ENV{FC} "mpif90 -f90=ifort")
+set(ENV{FC} "ifort")
 
 cmake_minimum_required (VERSION 2.8)
 
-project (genSpread)
+project (cutPert)
 
 enable_language (Fortran)
 
@@ -13,7 +14,6 @@ MESSAGE( STATUS "SOURCE directory " ${PROJECT_SOURCE_DIR})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-# SET(BUFRPATH "-L/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/buildgsi/lib -lbufr_v10.2.5")
 SET(BASELIBPATH "/mnt/lfs1/projects/rtwbl/mhu/rapcode/work/util/GSD_UTL/tools/baselib/build")
 SET(NETCDF_LIB "-L$ENV{NETCDF}/lib -lnetcdf -lnetcdff")
 
