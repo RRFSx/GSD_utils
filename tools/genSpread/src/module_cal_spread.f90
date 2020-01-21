@@ -93,25 +93,33 @@ module module_cal_spread
                elseif(trim(this%varname)=='tv') then
                   allocate(fld3d(ny,nx,nz))
                   read(iunit) 
-                  read(iunit) fld3d      ! tv
+                  do k=1,nz
+                  read(iunit) fld3d(:,:,k)      ! tv
+                  enddo
                elseif(trim(this%varname)=='u') then
                   allocate(fld3d(ny,nx,nz))
                   read(iunit) 
                   read(iunit) 
-                  read(iunit) fld3d
+                  do k=1,nz
+                  read(iunit) fld3d(:,:,k)
+                  enddo
                elseif(trim(this%varname)=='v') then
                   allocate(fld3d(ny,nx,nz))
                   read(iunit)
                   read(iunit)
                   read(iunit)
-                  read(iunit) fld3d      
+                  do k=1,nz
+                  read(iunit) fld3d(:,:,k)
+                  enddo
                elseif(trim(this%varname)=='rh') then
                   allocate(fld3d(ny,nx,nz))
                   read(iunit)
                   read(iunit)
                   read(iunit)
                   read(iunit)
-                  read(iunit) fld3d      
+                  do k=1,nz
+                  read(iunit) fld3d(:,:,k)    
+                  enddo
                else
                   write(*,*) 'readAddPerturbation Error, unknow variable ',trim(this%varname)
                   stop 123

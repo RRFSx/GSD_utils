@@ -8,14 +8,13 @@ begin
 ; open file and read in data
 ;=================================================;
 
-  path="/mnt/lfs1/projects/wrfruc/mhu/rapcode/util/GSD_UTL/tools/genSpread/run/results/"
-  testid="21z_m08m09" 
+  path="/mnt/lfs1/projects/wrfruc/mhu/rapcode/util/GSD_UTL/tools/cutperts/run/plot/"
+  testid="M0809F21" 
   variableid=(/"ps","tv","u","v","rh"/)
   domain="X0001-0399Y0001-0399Z0001-0050"
-  filedata=path+"/plot_"+testid+"/spread_"+domain+".bin"
-  filedata=path+"/plot_"+testid+"/spread_"+domain+".bin"
+  filedata=path+"/"+testid+"_spread_"+domain+".bin"
 
-  resultsfile="Cspread."+testid+"."+domain+".cut"
+  resultsfile="Cspread."+testid+"."+domain+".all"
 
   dim = fbinrecread(filedata, 0, (/3/), "integer")
   nx=dim(0)
@@ -46,10 +45,10 @@ begin
   jstart=0
   jend=ny-1
 
-  istart=220
-  iend=320
-  jstart=40
-  jend=140
+;  istart=220
+;  iend=320
+;  jstart=40
+;  jend=140
 
   lat_ll  = rlat(jstart,istart)
   lat_ur  = rlat(jend,iend)
@@ -132,26 +131,26 @@ begin
   presources@cnFillColors = (/ 0,11,21,31,38,48,58,68,78,88,98/)
 
   do iv = 0,4
-     presources@tiMainString    = variableid(iv)+" Spread:"+domain+"+terrain"
+     presources@tiMainString    = variableid(iv)+" Spread:"+testid+"+terrain"
      map = gsn_csm_contour_map(wks,terrain(jstart:jend,istart:iend),resources)
      if ( iv .eq. 0 ) then
 ;        presources@cnLevels              = (/0.06,0.07,0.08,0.10,0.12,0.14,0.18,0.22,0.26,0.30/) ; ps
-        presources@cnLevelSpacingF=0.001
+        presources@cnLevelSpacingF=0.002
         plot = gsn_contour(wks,fieldps(0,jstart:jend,istart:iend),presources)
      else if ( iv .eq. 1 ) then
 ;        presources@cnLevels              = (/0.6,0.8,1.0,1.2,1.4,1.8,2.0,2.2,2.4,2.8/)  ; T
 ;        presources@cnLevels              = (/0.2,0.3,0.4,0.5,0.6,0.8,1.0,1.2,1.4,1.8/)  ; T
-        presources@cnLevelSpacingF=0.05
+        presources@cnLevelSpacingF=0.1
         plot = gsn_contour(wks,fieldtv(0,jstart:jend,istart:iend),presources)
      else if ( iv .eq. 2 ) then
 ;        presources@cnLevels             = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
 ;        presources@cnLevels             = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
-        presources@cnLevelSpacingF=0.05
+        presources@cnLevelSpacingF=0.1
         plot = gsn_contour(wks,fieldu(0,jstart:jend,istart:iend),presources)
      else if ( iv .eq. 3 ) then
 ;        presources@cnLevels              = (/0.6,1.0,1.4,1.8,2.2,2.6,3.0,3.4,3.8,4.2/)  ; U,V
 ;        presources@cnLevels             = (/0.2,0.4,0.6,0.8,1.0,1.2,1.6,2.0,2.4,2.8/)  ; U,V
-        presources@cnLevelSpacingF=0.05
+        presources@cnLevelSpacingF=0.1
         plot = gsn_contour(wks,fieldv(0,jstart:jend,istart:iend),presources)
      else if ( iv .eq. 4 ) then
 ;        presources@cnLevels              = (/0.02,0.04,0.06,0.08,0.10,0.12,0.14,0.16,0.18,0.20/) ; rh

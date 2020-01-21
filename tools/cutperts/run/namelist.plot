@@ -1,4 +1,4 @@
 &setup
-  basefile='/mnt/lfs1/projects/rtwbl/mhu/test/clmtEns/bk/wrfprd_ic/wrfinput_d01_400',
-  pathfull='/mnt/lfs3/projects/wrfruc/mhu/cutperts/run/results',
+  basefile='/mnt/lfs1/projects/rtwbl/mhu/test/clmtEns/bk/wrfprd_ic_400/wrfinput_d01',
+  pathfull='/mnt/lfs1/projects/wrfruc/mhu/rapcode/util/GSD_UTL/tools/cutperts/run/plot',
 /

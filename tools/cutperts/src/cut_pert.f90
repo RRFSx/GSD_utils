@@ -3,6 +3,7 @@ program calculate_spread
 !  read in regional ensemble perturbations from 
 !  HRRRE and calculate ensemble spread
 !
+   use mpi
    use module_interp_perturbations, only : interp_perts
    use module_ncio, only : ncio
    use module_map_utils, only : map_util
@@ -13,6 +14,8 @@ program calculate_spread
    type(ncio) :: ncfcut
    type(map_util) :: map
    
+   integer :: id, worldid,worldsize
+   integer,allocatable :: nfstart,nfend
    integer :: nfile
    character(len=180),allocatable :: filelist(:)
    character(len=180) :: filename
@@ -36,8 +39,15 @@ program calculate_spread
    real, allocatable :: rlon_cut(:,:)
    real :: xc,yc,xc1,yc1
 !
-   integer :: i,j,nf
+   integer :: i,j,nf,ierr
 !
+   call MPI_Init (ierr)
+
+   call MPI_Comm_size (MPI_COMM_WORLD, worldsize, ierr)
+   call MPI_Comm_rank (MPI_COMM_WORLD, worldid, ierr)
+   id=worldid+1
+   if(id==1) write(*,*) 'id=',worldid, ' msize=',worldsize
+
    numvar=5
    allocate(varnamelist(numvar))
    varnamelist(1)='ps'
@@ -73,6 +83,15 @@ program calculate_spread
      endif
    close(12)
    write(*,*) 'total file will Process  =',nfile
+   nfstart=1
+   nfend=nfile
+   if(worldsize > 1 ) then
+      nf=nfile/worldsize
+      nfstart=(id-1)*nf + 1
+      nfend=nfstart + nf - 1
+      if(id==worldsize) nfend=nfile
+   endif 
+   write(*,*) 'core ',id,' will process file from ',nfstart,' to',nfend
 
 ! read dimension and latlon frpm original file
    call ncforg%open(trim(org_grid),"r",200)
@@ -115,7 +134,8 @@ program calculate_spread
    write(*,*) 'leftlow=',cutperts%ijloc(1,1,1),cutperts%ijloc(1,1,2)
    write(*,*) 'rightup=',cutperts%ijloc(nxcut,nycut,1),cutperts%ijloc(nxcut,nycut,2)
 !
-   do nf=1,nfile
+!   do nf=1,nfile
+   do nf=nfstart,nfend
       write(outfilename,'(4a,I3.3,a)') trim(resultspath),"/",trim(cutname),"_",nf,'.bin'
       filename=trim(filelist(nf))
       write(*,'(a,I3,a)') "processing ",nf,trim(filename)
@@ -125,5 +145,7 @@ program calculate_spread
 
    deallocate(filelist)
    call cutperts%destroy()
+
+   call MPI_Finalize (ierr)
 
 end program calculate_spread

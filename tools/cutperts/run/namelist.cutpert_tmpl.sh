@@ -1,0 +1,9 @@
+namelist_cutpert="
+&setup
+ filelistname='/mnt/lfs1/projects/wrfruc/mhu/rapcode/util/GSD_UTL/tools/cutperts/run/filelist',
+ resultspath='/mnt/lfs1/projects/wrfruc/mhu/rapcode/util/GSD_UTL/tools/cutperts/run/results',
+ org_grid='/mnt/lfs1/projects/rtwbl/mhu/test/gsi/hrrre/data/wrfout_d02_2018-07-17_09_00_00',
+ cut_grid='/mnt/lfs1/projects/rtwbl/mhu/test/clmtEns/bk/wrfprd_ic_400/wrfinput_d01', 
+ cutname=${runname},
+/
+"

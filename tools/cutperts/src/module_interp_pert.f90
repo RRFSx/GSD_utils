@@ -102,7 +102,11 @@ module module_interp_perturbations
                       enddo
                     enddo
                   enddo
-                  write(outunit) fld3dout
+                  do k=1,nzz
+                     write(outunit) fld3dout(:,:,k)
+!                     write(*,*) 'max/min',k,maxval(fld3dout(:,:,k)),&
+!                                  minval(fld3dout(:,:,k))
+                  enddo
 !
                   deallocate(fld3d)
                   deallocate(fld3dout)
