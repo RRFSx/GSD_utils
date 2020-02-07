@@ -1,4 +1,36 @@
-subroutine read_grib2_head(filename,nx,ny,nz,rlonmin,rlatmax,rdx,rdy)
+module readwrite_grib2_mod
+!
+!  module: functions to read and write grib2 files
+!
+! program history log:
+!   2020-02-01 Hu           initial build
+! 
+! Subroutines Included:
+!
+
+  use grib_mod
+
+  implicit none
+
+  public :: grib2mod
+
+  private 
+
+  type :: grib2mod
+     integer   :: nx,ny,nz
+     real      :: rlonmin,rlatmax
+     real*8    :: rdx,rdy
+     integer   :: ntot
+     integer   :: height
+     contains
+       procedure :: read_head   => read_grib2_head
+       procedure :: read_single => read_grib2_sngle
+       procedure :: readwrt_single => readwrite_grib2_sngle
+  end type
+
+contains
+
+subroutine read_grib2_head(this,filename)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    read_grib2  read grib2 file head information
@@ -24,10 +56,8 @@ subroutine read_grib2_head(filename,nx,ny,nz,rlonmin,rlatmax,rdx,rdy)
   use grib_mod
 
   implicit none
+  class(grib2mod) :: this
   character*256,intent(in)  :: filename
-  integer, intent(out)      :: nx,ny,nz
-  real,    intent(out)      :: rlonmin,rlatmax
-  real*8,  intent(out)      :: rdx,rdy
 !
 !
   type(gribfield) :: gfld
@@ -132,13 +162,13 @@ subroutine read_grib2_head(filename,nx,ny,nz,rlonmin,rlatmax,rdx,rdy)
 !           write(*,*) 'map projection=',gfld%igdtnum
            if (gfld%igdtnum.eq.0) then ! Lat/Lon grid aka Cylindrical
                                        ! Equidistant
-              nx = gfld%igdtmpl(8)
-              ny = gfld%igdtmpl(9)
-              nz = 1
-              rdx = gfld%igdtmpl(17)/scale_factor
-              rdy = gfld%igdtmpl(18)/scale_factor
-              rlatmax = gfld%igdtmpl(12)/scale_factor
-              rlonmin = gfld%igdtmpl(13)/scale_factor 
+              this%nx = gfld%igdtmpl(8)
+              this%ny = gfld%igdtmpl(9)
+              this%nz = 1
+              this%rdx = gfld%igdtmpl(17)/scale_factor
+              this%rdy = gfld%igdtmpl(18)/scale_factor
+              this%rlatmax = gfld%igdtmpl(12)/scale_factor
+              this%rlonmin = gfld%igdtmpl(13)/scale_factor 
 !              write(*,*) 'nx,ny=',nx,ny
 !              write(*,*) 'dx,dy=',rdx,rdy
 !              write(*,*) 'lat1,lon1=',rlatmax,rlonmin
@@ -159,7 +189,7 @@ subroutine read_grib2_head(filename,nx,ny,nz,rlonmin,rlatmax,rdx,rdy)
   return
 end subroutine read_grib2_head
 
-subroutine read_grib2_sngle(filename,ntot,height,var)
+subroutine read_grib2_sngle(this,filename,var)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    read_grib2  read grib2 file
@@ -185,10 +215,9 @@ subroutine read_grib2_sngle(filename,ntot,height,var)
   use grib_mod
 
   implicit none
+  class(grib2mod) :: this
   character*256,intent(in)  :: filename
-  integer, intent(in)       :: ntot
-  real, intent(out) :: var(ntot)
-  integer, intent(out) :: height
+  real, intent(out) :: var(this%ntot)
 !
 !
   type(gribfield) :: gfld
@@ -292,7 +321,7 @@ subroutine read_grib2_sngle(filename,ntot,height,var)
 !           write(*,*) 'Indicator of model =',gfld%ipdtmpl(5)
 !           write(*,*) 'observation level (m)=',gfld%ipdtmpl(12)
 !           write(*,*) 'map projection=',gfld%igdtnum
-           height=gfld%ipdtmpl(12)
+           this%height=gfld%ipdtmpl(12)
            if (gfld%igdtnum.eq.0) then ! Lat/Lon grid aka Cylindrical
                                        ! Equidistant
               nx = gfld%igdtmpl(8)
@@ -326,8 +355,8 @@ subroutine read_grib2_sngle(filename,ntot,height,var)
 !             fldmax=gfld%fld(1)
 !             fldmin=gfld%fld(1)
 !             sum=gfld%fld(1)
-             if(ntot .ne. gfld%ndpts) then
-                write(*,*) 'Error, wrong dimension ',ntot, gfld%ndpts
+             if(this%ntot .ne. gfld%ndpts) then
+                write(*,*) 'Error, wrong dimension ',this%ntot, gfld%ndpts
                 stop 1234
              endif
              do j=1,gfld%ndpts
@@ -349,7 +378,7 @@ subroutine read_grib2_sngle(filename,ntot,height,var)
   return
 end subroutine read_grib2_sngle
 
-subroutine readwrite_grib2_sngle(filename,outfilename,ntot,height,var)
+subroutine readwrite_grib2_sngle(this,filename,outfilename,var)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    read_grib2  read grib2 file
@@ -371,15 +400,11 @@ subroutine readwrite_grib2_sngle(filename,outfilename,ntot,height,var)
 !
 !$$$ end documentation block
 
-!  use gridmod, only: idsl5,regional
-  use grib_mod
-
   implicit none
+  class(grib2mod) :: this
   character*256,intent(in)  :: filename
   character*256,intent(in)  :: outfilename
-  integer, intent(in)       :: ntot
-  real, intent(out) :: var(ntot)
-  integer, intent(out) :: height
+  real, intent(in) :: var(this%ntot)
 !
 !
   type(gribfield) :: gfld
@@ -400,6 +425,7 @@ subroutine readwrite_grib2_sngle(filename,outfilename,ntot,height,var)
   integer :: nx,ny
   real    :: dx,dy,lat1,lon1
   real    :: scale_factor
+  integer :: height
 !
 !
   integer :: nn,n,j,iret
@@ -503,15 +529,15 @@ subroutine readwrite_grib2_sngle(filename,outfilename,ntot,height,var)
                write(*,*) ' ERROR extracting field gf_getfld = ',ierr
                cycle
              endif
-             if(ntot .ne. gfld%ndpts) then
-                write(*,*) 'Error, wrong dimension ',ntot, gfld%ndpts
+             if(this%ntot .ne. gfld%ndpts) then
+                write(*,*) 'Error, wrong dimension ',this%ntot, gfld%ndpts
                 stop 1234
              endif
              do j=1,gfld%ndpts
-               var(j)=gfld%fld(j)
+               gfld%fld(j)=var(j)
              enddo
-             height=gfld%ipdtmpl(12)
-             write(*,*) 'height,max,min',height,maxval(var),minval(var)
+             !height=gfld%ipdtmpl(12)
+             !write(*,*) 'height,max,min',height,maxval(var),minval(var)
              call putgb2(wrtfile,gfld,ierr)
 
              call gf_free(gfld)
@@ -527,3 +553,5 @@ subroutine readwrite_grib2_sngle(filename,outfilename,ntot,height,var)
   enddo loopfile
   return
 end subroutine readwrite_grib2_sngle
+
+end module readwrite_grib2_mod

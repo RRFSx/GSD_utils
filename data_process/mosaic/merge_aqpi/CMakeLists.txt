@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-file(GLOB src_all  merge_mosaic_aqpi.f90 readwrite_grib2_mod.f90)
+file(GLOB src_all  merge_mosaic_aqpi.f90 module_grid2_readwrite.f90)
 set_source_files_properties( ${src_all} PROPERTIES COMPILE_FLAGS ${Fortran_FLAGS} )
 
 include_directories( ${GSIINC} ${NETCDFINC} ${G2INC} )
