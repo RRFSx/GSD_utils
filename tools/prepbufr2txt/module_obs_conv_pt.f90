@@ -16,7 +16,7 @@ module module_obs_conv_pt
    type :: obsbase_conv
       integer :: datatype
       integer :: numvar
-      integer :: ip,it,iq,ih,iu,iv
+      integer :: ip,it,iq,ih,iu,iv,idx,idy,idt
       character(len=20),allocatable :: varnames(:)
       integer :: maxnumlvl=1
       integer :: n_alloc=0
@@ -35,6 +35,7 @@ module module_obs_conv_pt
           procedure :: replace => replace_conv
           procedure :: findsta => findsta_conv
           procedure :: list    => list_conv
+          procedure :: listsnd => list_conv_snd
           procedure :: writept => write_conv_point
           procedure :: readpt  => read_conv_point
           procedure :: destroy => destroy_conv
@@ -57,7 +58,7 @@ module module_obs_conv_pt
 
          if(itype==120) then  ! 120 is sounding
             this%datatype=itype
-            this%numvar=6
+            this%numvar=9
 
             this%ip=1
             this%it=2
@@ -65,6 +66,9 @@ module module_obs_conv_pt
             this%ih=4
             this%iu=5
             this%iv=6
+            this%idx=7
+            this%idy=8
+            this%idt=9
 
             allocate(this%varnames(this%numvar))
             this%varnames(1)='pressure (Pa)'
@@ -73,6 +77,9 @@ module module_obs_conv_pt
             this%varnames(4)='height (m)'
             this%varnames(5)='U wind (m/s)'
             this%varnames(6)='V wind (m/s)'
+            this%varnames(7)='drift lon'
+            this%varnames(8)='drift lat'
+            this%varnames(9)='drift time'
          else if(itype >=180 .and. itype <=189) then  ! 187 is METOR
             this%datatype=itype
             this%numvar=6
@@ -270,13 +277,143 @@ module module_obs_conv_pt
          
          do while(associated(thisobs))
             num=num+1
-            if(num <= listnum) call thisobs%list()
+            !if(num <= listnum) call thisobs%list()
+            if(num <= listnum) call thisobs%listsnd()
             thisobs => thisobs%next 
          enddo
          write(*,*) 
       
       end subroutine list_conv
+
+      subroutine list_conv_snd(this,filename,minlist)
+! display the content in a conventional obs list
+         class(obs_conv_pt) :: this
+         type(obsbase), pointer :: thisobs
+         character(len=*), intent(in)  :: filename
+         integer, intent(in), optional :: minlist
+         integer :: listnum,num
+         integer :: numvar,numlvl,obslen
+         integer :: ntype
+         integer :: PP,TT,TD,HH,WS,WD
+         integer :: HHMM,hhh,mm
+         integer :: i,k
+         integer :: iy,im,id,ih,iff
+         character(len=3) :: cmon(12)
+         real :: rlat,rlon
+         integer :: ilat,ilon
+         character(LEN=1) :: clat,clon
+         integer :: iunitout
+      
+         character(len=180) :: filenameall
+         character(len=12) :: timetag
+
+         write(timetag,'(I10,I2.2)') this%idate,this%mm
+         write(filenameall,'(a,a,I4.4,3a)') &
+               trim(filename),'_type',this%datatype,'_',timetag,'.txt'
+
+         iunitout=13
+         open(iunitout,file=trim(filenameall))
+         write(*,*) 
+         write(*,*) '====list this observation====',this%datatype
+         write(*,*) 'maximum level is=',this%maxnumlvl,this%idate
+         write(*,*) 'variable index: P, T, Q, H, U, V'
+         write(*,'(15x,10I3)') this%ip,this%it,this%iq,this%ih,this%iu,this%iv
+         cmon(1)='JAN'
+         cmon(2)='FEB'
+         cmon(3)='MAR'
+         cmon(4)='APR'
+         cmon(5)='MAY'
+         cmon(6)='JUN'
+         cmon(7)='JUL'
+         cmon(8)='AUG'
+         cmon(9)='SEP'
+         cmon(10)='OCT'
+         cmon(11)='NOV'
+         cmon(12)='DEC'
+
+         thisobs => this%head
+         if(.NOT.associated(thisobs)) then
+            write(*,*) 'list_conv: No obs in this variable'
+             return
+         endif
+
+         num=0
+         listnum=this%n_alloc
+         if(present(minlist)) listnum=min(this%n_alloc,minlist)
+         iy=this%idate/1000000
+         im=(this%idate-iy*1000000)/10000
+         id=(this%idate-iy*1000000-im*10000)/100
+         ih=this%idate-iy*1000000-im*10000-id*100
+         
+         do while(associated(thisobs))
+            num=num+1
+            if(num <= listnum) then
+               rlat=thisobs%lat
+               rlon=thisobs%lon
+               clat="N"
+               clon="E"
+               if(rlon > 180.0) then
+                  rlon=360.0-rlon
+                  clon="W"
+               endif
+               if(rlat < 0.0) then
+                  rlat=-rlat
+                  clat="S"
+               endif
+               write(iunitout,'(3x,a,2I7,A7,I7)') "RAOB",ih,id,cmon(im),iy
+               write(iunitout,'(2i7,A7,f6.2,A1,f6.2,A1,2i7)') 1,99999,trim(thisobs%name),rlat,clat,rlon,clon,&
+                                   int(thisobs%ele),int(thisobs%time)
+               write(iunitout,'(7i7)') 2,99999,99999,99999,99999,99999,99999
+               write(iunitout,'(i7,10x,a4,14x,i7,5x,a2)') 3,'AAAA',99999,'kt'
+               numvar=thisobs%numvar
+               numlvl=thisobs%numlvl
+               obslen=numvar*numlvl
+               if(obslen >=1) then
+                  do k=1,numlvl
+                     PP=99999
+                     TT=99999
+                     TD=99999
+                     HH=99999
+                     WS=99999
+                     WD=99999
+                     ntype=4
+                     if(k==1) ntype=9
+                     hhh=ih
+                     mm=int(thisobs%obs((k-1)*numvar+this%idt)*60.0)
+                     if(mm >=0) then
+                        HHMM=hhh*100+mm
+                     else
+                        hhh=ih-(mm/60+1)
+                        if(hhh<0) hhh=24+hhh
+                        HHMM=hhh*100+(60+mm)
+                     endif
+                     rlat=thisobs%obs((k-1)*numvar+this%idy)
+                     rlon=thisobs%obs((k-1)*numvar+this%idx)
+                     if(rlon > 180.0) then
+                        rlon=360.0-rlon
+                     endif
+                     if(rlat < 0.0) then
+                        rlat=-rlat
+                     endif
+                     ilat=int(rlat*100.0)
+                     ilon=int(rlon*100.0)
+
+                     if(thisobs%obs((k-1)*numvar+this%ip) > -99998.0) PP=int(thisobs%obs((k-1)*numvar+this%ip)*10.0) 
+                     if(thisobs%obs((k-1)*numvar+this%it) > -99998.0) TT=int(thisobs%obs((k-1)*numvar+this%it)*10.0) 
+                     if(thisobs%obs((k-1)*numvar+this%iq) > -99998.0) TD=int(thisobs%obs((k-1)*numvar+this%iq)*10.0) 
+                     if(thisobs%obs((k-1)*numvar+this%ih) > -99998.0) HH=int(thisobs%obs((k-1)*numvar+this%ih)) 
+                     if(thisobs%obs((k-1)*numvar+this%iu) > -99998.0) WD=int(thisobs%obs((k-1)*numvar+this%iu)) 
+                     if(thisobs%obs((k-1)*numvar+this%iv) > -99998.0) WS=int(thisobs%obs((k-1)*numvar+this%iv)) 
+                     write(iunitout,'(10I7)') ntype,PP, HH,TT,TD,WD,WS,HHMM,ilon,ilat
+                  enddo
+               endif
+            endif
+            thisobs => thisobs%next 
+         enddo
+         close(iunitout) 
 !
+      end subroutine list_conv_snd
+
       subroutine findsta_conv(this,targetobs,foundobs)
 ! display the content in a conventional obs list
          class(obs_conv_pt) :: this

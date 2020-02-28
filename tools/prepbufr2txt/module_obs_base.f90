@@ -34,6 +34,7 @@ module module_obs_base
       real(r_single),allocatable :: error(:)
       contains
          procedure :: list => list_obsbase   ! list content of base obs
+         procedure :: listsnd => list_obsbase_snd   ! list content of base obs
          procedure :: alloc => alloc_obsbase ! allocate memory for base obs
          procedure :: destroy => destroy_obsbase  ! deallocate memory for base obs
    end type obsbase
@@ -65,6 +66,49 @@ module module_obs_base
          endif
       
       end subroutine list_obsbase
+
+      subroutine list_obsbase_snd(this)
+! list the content in a bas observation
+         class(obsbase) :: this
+
+         integer :: numvar,numlvl,obslen
+         integer :: i,k
+         integer :: PP,TT,TD,HH,WS,WD
+         integer :: ntype
+!
+         write(*,'(a,a10,4f10.3)') 'observation: name, longitude, latitude, hight, time =', &
+                     trim(this%name),this%lon,this%lat,this%ele,this%time
+
+         numvar=this%numvar
+         numlvl=this%numlvl
+         obslen=numvar*numlvl
+         if(obslen >=1) then
+            do k=1,numlvl
+             !  write(*,'(a4,I4,10f12.2)') 'obs=',k,(this%obs((k-1)*numvar+i),i=1,numvar)
+             ! PRESSURE     HEIGHT       TEMP      DEWPT   WIND DIR    WIND SPD
+             ! HHMM BEARING RANGE
+             ! P, T, Q, H, U, V
+               PP=99999
+               TT=99999
+               TD=99999
+               HH=99999
+               WS=99999
+               WD=99999
+               ntype=4
+               if(k==1) ntype=9
+               if(this%obs((k-1)*numvar+1) > -99998.0) PP=int(this%obs((k-1)*numvar+1)*10.0)
+               if(this%obs((k-1)*numvar+2) > -99998.0) TT=int(this%obs((k-1)*numvar+2)*10.0)
+               if(this%obs((k-1)*numvar+3) > -99998.0) TD=int(this%obs((k-1)*numvar+3)*10.0)
+               if(this%obs((k-1)*numvar+4) > -99998.0) HH=int(this%obs((k-1)*numvar+4))
+               if(this%obs((k-1)*numvar+5) > -99998.0) WD=int(this%obs((k-1)*numvar+5))
+               if(this%obs((k-1)*numvar+6) > -99998.0) WS=int(this%obs((k-1)*numvar+6))
+               write(*,'(10I7)') ntype,PP, HH,TT,TD,WD,WS,9999,99999,99999
+            enddo
+         else
+            write(*,*) 'No obs for this location'
+         endif
+      
+      end subroutine list_obsbase_snd
 
       subroutine alloc_obsbase(this,numvar,numlvl,ifquality,iferror)
 ! allocate memory for a base observation variable

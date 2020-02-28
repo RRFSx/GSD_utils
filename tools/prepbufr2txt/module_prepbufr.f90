@@ -57,12 +57,15 @@ module module_prepbufr
 !
          integer, parameter :: mxmn=35, mxlv=250
          character(80):: hdstr='SID XOB YOB DHR TYP ELV SAID T29'
-         character(80):: obstr='POB QOB TOB ZOB UOB VOB PWO CAT PRSS'
+         character(80):: obstr='POB TDO TOB ZOB DDO FFO PWO CAT PRSS'
+         !character(80):: obstr='POB QOB TOB ZOB UOB VOB PWO CAT PRSS'
          character(80):: qcstr='PQM QQM TQM ZQM WQM NUL PWQ     '
          character(80):: oestr='POE QOE TOE NUL WOE NUL PWE     '
+         character(80):: drift='XDR YDR HRDR'
          real(8) :: hdr(mxmn),obs(mxmn,mxlv),qcf(mxmn,mxlv),oer(mxmn,mxlv)
          real(8) :: hdr2(mxmn),obs2(mxmn,mxlv),qcf2(mxmn,mxlv),oer2(mxmn,mxlv)
          real(8) :: hdr3(mxmn),obs3(mxmn,mxlv),qcf3(mxmn,mxlv),oer3(mxmn,mxlv)
+         real(8) :: drfdat(mxmn,mxlv)
 
          INTEGER        :: ireadmg,ireadsb
 
@@ -73,7 +76,7 @@ module module_prepbufr
          real(8)        :: rstation_id
          equivalence(rstation_id,c_sid)
  
-         integer        :: i,k,kk,kk2,kk3,iret,iobs,ivar,iret2,iret3
+         integer        :: i,k,kk,kk2,kk3,iret,iobs,ivar,iret2,iret3,iretd
          logical        :: if_duplicate,ifnotused
          integer        :: index_dup,index_sameobs
 
@@ -99,10 +102,10 @@ module module_prepbufr
          index_sameobs=0   ! 0 no obs in obs2
                            ! 1 fresh obs in obs2
 
-!         open(24,file='prepbufr.table')
+         open(24,file='prepbufr.table')
          open(unit_in,file=trim(filename),form='unformatted',status='old')
          call openbf(unit_in,'IN',unit_in)
-!         call dxdump(unit_in,24)
+         call dxdump(unit_in,24)
          call datelen(10)
            nmsg=0
            msg_report: do while (ireadmg(unit_in,subset,idate) == 0)
@@ -125,6 +128,18 @@ module module_prepbufr
                call ufbint(unit_in,oer,mxmn,mxlv,iret,oestr)
                call ufbint(unit_in,qcf,mxmn,mxlv,iret,qcstr)
                rstation_id=hdr(1)
+               if(int(hdr(5))==220 .or. int(hdr(5))==120) then
+                 call ufbint(unit_in,drfdat,mxmn,mxlv,iretd,drift)
+                 if(iretd==iret) then
+                    obs(10:12,:)=drfdat(1:3,:)
+                 !   do k=1,iretd
+                 !      write(*,*) "drift=",k,drfdat(1,k),drfdat(2,k),drfdat(3,k)
+                 !   enddo
+                 else
+                    write(*,*) 'drift level does not equal to obs level, stop'
+                    stop 123
+                 endif
+               endif
 !          
 !  profiler height is above sea level
 !  convert it to above surface level
@@ -246,11 +261,18 @@ module module_prepbufr
                     do k=1,thisobs%numlvl
                        if(obs3(1,k) < 10.0e9 .and. this%ip>0) thisobs%obs((k-1)*thisobs%numvar+this%ip)=obs3(1,k)
                        if(obs3(3,k) < 10.0e9 .and. this%it>0) thisobs%obs((k-1)*thisobs%numvar+this%it)=obs3(3,k)
-                       if(obs3(2,k) < 10.0e9 .and. this%iq>0) thisobs%obs((k-1)*thisobs%numvar+this%iq)=obs3(2,k)/1000.0_r_single
+                       if(obs3(2,k) < 10.0e9 .and. this%iq>0) thisobs%obs((k-1)*thisobs%numvar+this%iq)=obs3(2,k)
                        if(obs3(4,k) < 10.0e9 .and. this%ih>0) thisobs%obs((k-1)*thisobs%numvar+this%ih)=obs3(4,k)
                        if(obs3(5,k) < 10.0e9 .and. this%iu>0) thisobs%obs((k-1)*thisobs%numvar+this%iu)=obs3(5,k)
                        if(obs3(6,k) < 10.0e9 .and. this%iv>0) thisobs%obs((k-1)*thisobs%numvar+this%iv)=obs3(6,k)
                     enddo
+                    if(this%datatype==120) then
+                       do k=1,thisobs%numlvl
+                          if(obs3(10,k) < 10.0e9 .and. this%idx>0) thisobs%obs((k-1)*thisobs%numvar+this%idx)=obs3(10,k)
+                          if(obs3(11,k) < 10.0e9 .and. this%idy>0) thisobs%obs((k-1)*thisobs%numvar+this%idy)=obs3(11,k)
+                          if(obs3(12,k) < 10.0e9 .and. this%idt>0) thisobs%obs((k-1)*thisobs%numvar+this%idt)=obs3(12,k)
+                       enddo
+                    endif
                     if(thisobs%ifquality) then
                        thisobs%quality=imissing
                        do k=1,thisobs%numlvl
@@ -316,7 +338,7 @@ module module_prepbufr
                  do k=1,thisobs%numlvl
                     if(obs3(1,k) < 10.0e9 .and. this%ip>0) thisobs%obs((k-1)*thisobs%numvar+this%ip)=obs3(1,k)
                     if(obs3(3,k) < 10.0e9 .and. this%it>0) thisobs%obs((k-1)*thisobs%numvar+this%it)=obs3(3,k)
-                    if(obs3(2,k) < 10.0e9 .and. this%iq>0) thisobs%obs((k-1)*thisobs%numvar+this%iq)=obs3(2,k)/1000.0_r_single
+                    if(obs3(2,k) < 10.0e9 .and. this%iq>0) thisobs%obs((k-1)*thisobs%numvar+this%iq)=obs3(2,k)
                     if(obs3(4,k) < 10.0e9 .and. this%ih>0) thisobs%obs((k-1)*thisobs%numvar+this%ih)=obs3(4,k)
                     if(obs3(5,k) < 10.0e9 .and. this%iu>0) thisobs%obs((k-1)*thisobs%numvar+this%iu)=obs3(5,k)
                     if(obs3(6,k) < 10.0e9 .and. this%iv>0) thisobs%obs((k-1)*thisobs%numvar+this%iv)=obs3(6,k)

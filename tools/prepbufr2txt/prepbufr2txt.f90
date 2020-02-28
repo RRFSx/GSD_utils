@@ -28,7 +28,7 @@ program prepbufr2txt
 
    character(len=180) :: obsfile
    character(len=180) :: savefile
-   character(len=180) :: savefile_nc
+   character(len=180) :: savefile_txt
    integer :: n
 !
 !
@@ -69,8 +69,8 @@ program prepbufr2txt
       call obsall%initial_prepbufr(obstype(n),obsdate,obsmin,timewindow(n))
 
       call obsall%decodeprepbufr_all(trim(obsfile))
-      call obsall%list(2)
-      call obsall%writept(trim(savefile))
+      call obsall%listsnd(savefile)
+      !call obsall%writept(trim(savefile))
       call obsall%destroy_prepbufr()
    enddo
 
