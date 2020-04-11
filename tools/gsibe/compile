@@ -1,4 +1,4 @@
-ifort -o tune_BE_3drtma.exe tune_BE_3drtma.f90
+ifort -o tune_BE_3drtma.exe -debug -traceback tune_BE_3drtma.f90
 exit
 ifort -o convert_BE_old2new.exe -I../../include convert_BE_old2new.f90
 ifort -o tune_BE.exe -I../../include tune_BE.f90

@@ -21,7 +21,7 @@ PROGRAM tune_be_3drtma
   real(r_kind) fctr_agv,fctr_bv,fctr_wgv
 !
   open(outerr,file='berror_stats_3drtma',form='unformatted',status='new',convert='big_endian')
-  open(inerr,file='berror_stats',form='unformatted',status='old',convert='big_endian')
+  open(inerr,file='berror_stats_RAP',form='unformatted',status='old',convert='big_endian')
   
 ! Read header.
   rewind inerr
@@ -35,6 +35,9 @@ PROGRAM tune_be_3drtma
   allocate ( bv_avn(0:mlat+1,1:msig),wgv_avn(0:mlat+1,1:msig) )
 
   read(inerr)clat_avn,(sigma_avn(k),k=1,msig)
+  do k=1,msig
+     write(*,*) "singma=",k,sigma_avn(k)
+  enddo
   read(inerr)agv_avn,bv_avn,wgv_avn
   fctr_agv=1.0_r_kind
   fctr_bv =1.0_r_kind
@@ -112,51 +115,39 @@ subroutine tune_vz(msig,mlat,vztdq_avn,var)
   allocate( fctr_sf(msig))
   allocate( fctr_vp(msig))
   allocate( fctr(msig))
-  fctr_t =1.0_r_kind/8.0_r_kind
-  fctr_q =1.0_r_kind/8.0_r_kind
-  fctr_vp=1.0_r_kind/8.0_r_kind
-  fctr_sf=1.0_r_kind/8.0_r_kind
-  fctr=1.0_r_kind/8.0_r_kind
+  fctr_t =1.0_r_kind
+  fctr_q =1.0_r_kind
+  fctr_vp=1.0_r_kind
+  fctr_sf=1.0_r_kind
+  fctr=1.0_r_kind
+  if (var=='ps') then
+     fctr(1) = 1.0_r_kind*8.0_r_kind
+  else
+     fctr(1) = 1.0_r_kind*8.0_r_kind
+     fctr(2) = 1.0_r_kind*8.0_r_kind
+     fctr(3) = 1.0_r_kind*7.0_r_kind
+     fctr(4) = 1.0_r_kind*7.0_r_kind
+     fctr(5) = 1.0_r_kind*6.0_r_kind
+     fctr(6) = 1.0_r_kind*6.0_r_kind
+     fctr(7) = 1.0_r_kind*5.0_r_kind
+     fctr(8) = 1.0_r_kind*5.0_r_kind
+     fctr(9) = 1.0_r_kind*4.0_r_kind
+     fctr(10) = 1.0_r_kind*4.0_r_kind
+     fctr(11) = 1.0_r_kind*3.0_r_kind
+     fctr(12) = 1.0_r_kind*3.0_r_kind
+     fctr(13:23) = 1.0_r_kind*2.0_r_kind
+     fctr(24:34) = 1.0_r_kind*1.5_r_kind
+  endif
 !
-  if (var=='sf') fctr=fctr_sf
-  if (var=='vp') fctr=fctr_vp
-  if (var=='t') then
-     fctr=fctr_t
-!     fctr(1) = 5.0_r_kind
-!     fctr(2) = 4.8_r_kind
-!     fctr(3) = 4.6_r_kind
-!     fctr(4) = 4.4_r_kind
-!     fctr(5) = 4.2_r_kind
-!     fctr(6) = 4.0_r_kind
-!     fctr(7) = 3.8_r_kind
-!     fctr(8) = 3.6_r_kind
-!     fctr(9) = 3.4_r_kind
-!     fctr(10) = 3.2_r_kind
-!     fctr(11) = 3.0_r_kind
-!     fctr(12) = 2.9_r_kind
-!     fctr(13) = 2.8_r_kind
-!     fctr(14) = 2.6_r_kind
-!     fctr(15) = 2.4_r_kind
-!     fctr(16) = 2.2_r_kind
-!     fctr(17) = 1.8_r_kind
-!     fctr(18) = 1.6_r_kind
-!     fctr(19) = 1.4_r_kind
-!     fctr(20) = 1.2_r_kind
-  endif
-  if (var=='q')  then
-    fctr=fctr_q
-!    fctr(1) = 4.0_r_kind
-!    fctr(2) = 3.8_r_kind
-!    fctr(3) = 3.4_r_kind
-!    fctr(4) = 3.0_r_kind
-!    fctr(5) = 2.8_r_kind
-!    fctr(6) = 2.4_r_kind
-!    fctr(7) = 2.0_r_kind
-!    fctr(8) = 1.8_r_kind
-!    fctr(9) = 1.4_r_kind
-!    fctr(10) = 1.0_r_kind
-  endif
-  if (var=='ps') fctr=1.0_r_kind/8.0_r_kind
+!  if (var=='sf') ! fctr=fctr_sf
+!  if (var=='vp') ! fctr=fctr_vp
+!  if (var=='t') then
+!  !   fctr=fctr_t
+!  endif
+!  if (var=='q')  then
+!  !  fctr=fctr_q
+!  endif
+!  if (var=='ps') fctr(1)=1.0_r_kind/8.0_r_kind
   do k=1,msig
      vztdq_avn(k,:)=vztdq_avn(k,:)*fctr(k)
   end do
@@ -187,20 +178,38 @@ subroutine tune_hwll(msig,mlat,hwll_avn,var)
   allocate( fctr_q(msig))
   allocate( fctr_uv(msig))
   allocate( fctr(msig))
-  fctr_t =1.0_r_kind/8.0_r_kind
-  fctr_q =1.0_r_kind/8.0_r_kind
-  fctr_uv=1.0_r_kind/8.0_r_kind
+  fctr_t =1.0_r_kind
+  fctr_q =1.0_r_kind
+  fctr_uv=1.0_r_kind
   fctr=1.0_r_kind/8.0_r_kind
-  if(var=='t') then
+  if (var=='ps') then
+     fctr(1) = 1.0_r_kind/8.0_r_kind
+  else
+     fctr(1) = 1.0_r_kind/8.0_r_kind
+     fctr(2) = 1.0_r_kind/8.0_r_kind
+     fctr(3) = 1.0_r_kind/7.0_r_kind
+     fctr(4) = 1.0_r_kind/7.0_r_kind
+     fctr(5) = 1.0_r_kind/6.0_r_kind
+     fctr(6) = 1.0_r_kind/6.0_r_kind
+     fctr(7) = 1.0_r_kind/5.0_r_kind
+     fctr(8) = 1.0_r_kind/5.0_r_kind
+     fctr(9) = 1.0_r_kind/4.0_r_kind
+     fctr(10) = 1.0_r_kind/4.0_r_kind
+     fctr(11) = 1.0_r_kind/3.0_r_kind
+     fctr(12) = 1.0_r_kind/3.0_r_kind
+     fctr(13:23) = 1.0_r_kind/2.0_r_kind
+     fctr(24:34) = 1.0_r_kind/1.5_r_kind
+  endif
+!  if(var=='t') then
 !      call get_fctr_1(msig,fctr_t)
 !      write(*,*) fctr_t
-  endif
+!  endif
 !
-  if (var=='sf') fctr=fctr_uv
-  if (var=='vp') fctr=fctr_uv
-  if (var=='t')  fctr=fctr_t
-  if (var=='q')  fctr=fctr_q
-  if (var=='ps') fctr=1.0_r_kind/8.0_r_kind
+!  if (var=='sf') !fctr=fctr_uv
+!  if (var=='vp') !fctr=fctr_uv
+!  if (var=='t')  !fctr=fctr_t
+!  if (var=='q')  !fctr=fctr_q
+!  if (var=='ps') fctr=1.0_r_kind/8.0_r_kind
   do k=1,msig
      hwll_avn(:,k)=hwll_avn(:,k)*fctr(k)
   end do
