@@ -134,3 +134,96 @@ SUBROUTINE HANDLE_ERR_geo(STATUS)
        STOP 'Stopped'
      ENDIF
 END SUBROUTINE HANDLE_ERR_geo
+
+Subroutine  GET_DIM_ATT_fv3sar(geosngle,LONLEN,LATLEN)
+!
+!  Author: Ming Hu, GSL.
+!  
+!  First written: 04/06/2019.
+!
+!  IN:
+!     geosngle : name of mosaic file
+!  OUT
+!     LONLEN
+!     LATLEN
+!
+  IMPLICIT NONE
+
+  INCLUDE 'netcdf.inc'
+
+  CHARACTER*120    geosngle
+
+  INTEGER ::   mscNlon   ! number of longitude of mosaic data
+  INTEGER ::   mscNlat   ! number of latitude of mosaic data
+
+  INTEGER ::  NCID, STATUS
+  INTEGER ::  LONID, LATID
+  INTEGER ::  LONLEN, LATLEN
+
+  STATUS = NF_OPEN(trim(geosngle), 0, NCID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+
+  STATUS = NF_INQ_DIMID(NCID, 'grid_xt', LONID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+  STATUS = NF_INQ_DIMID(NCID, 'grid_yt', LATID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+
+  STATUS = NF_INQ_DIMLEN(NCID, LONID, LONLEN)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+  STATUS = NF_INQ_DIMLEN(NCID, LATID, LATLEN)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+
+  STATUS = NF_CLOSE(NCID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS) 
+
+END SUBROUTINE GET_DIM_ATT_fv3sar
+
+Subroutine  GET_geo_sngl_fv3sar(NCID,mscNlon,mscNlat,mscValueLAT,mscValueLON)
+!
+!  Author: Ming Hu, ESRL/GSD
+!  
+!  First written: 12/16/2007.
+!
+!  IN:
+!     mscNlon
+!     mscNlan
+!     NCID
+!  out:
+!     mscValueLAT
+!     mscValueLON
+!
+  IMPLICIT NONE
+
+  INCLUDE 'netcdf.inc'
+
+  INTEGER ::   mscNlon   ! number of longitude of mosaic data
+  INTEGER ::   mscNlat   ! number of latitude of mosaic data
+
+  INTEGER ::  NCID, STATUS, MSLATID,MSLONID
+
+  INTEGER ::   NDIMS
+  PARAMETER (NDIMS=3)                  ! number of dimensions
+  INTEGER START(NDIMS), COUNT(NDIMS)
+
+  REAL ::   mscValueLAT(mscNlon,mscNlat,1)
+  REAL ::   mscValueLON(mscNlon,mscNlat,1)
+  INTEGER :: i,j
+
+  START(1)=1
+  START(2)=1
+  START(3)=1
+  COUNT(1)=mscNlon
+  COUNT(2)=mscNlat
+  COUNT(3)=1
+
+  STATUS = NF_INQ_VARID (NCID, 'grid_latt', MSLATID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+  STATUS = NF_GET_VARA_REAL (NCID, MSLATID, START, COUNT, mscValueLAT)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+
+  STATUS = NF_INQ_VARID (NCID, 'grid_lont', MSLONID)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+  STATUS = NF_GET_VARA_REAL (NCID, MSLONID, START, COUNT, mscValueLON)
+  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR_geo(STATUS)
+
+end subroutine GET_geo_sngl_fv3sar
