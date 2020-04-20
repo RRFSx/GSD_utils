@@ -31,7 +31,6 @@ program  process_NASALaRC_cloud
   use misc_definitions_module , only : PROJ_LC, PROJ_ROTLL
   use constants_module ,only : EARTH_RADIUS_M
   use constants, only: init_constants_derived, deg2rad
-  !#use constants, only: satidgoeswest,satidgoeseast
   use gridmod_gsimap ,only : nlon,nlat,init_general_transform,tll2xy,txy2ll
 
   implicit none
@@ -41,7 +40,8 @@ program  process_NASALaRC_cloud
 ! MPI variables
   integer :: npe, mype,ierror
 !SATID
-  integer, parameter :: satidgoeswest=259  ! GOES 15
+!  integer, parameter :: satidgoeswest=259  ! GOES 15  Stopped after March 2nd, 2020
+  integer, parameter :: satidgoeswest=271  ! GOES 17
   integer, parameter :: satidgoeseast=270  ! GOES 16
   real     :: rad2deg = 180.0/3.1415926
   integer,parameter  :: boxMAX=10
@@ -610,7 +610,7 @@ subroutine sortmed(p,n,is)
       do 10 i=1,nm1
       ip1 = i+1
         do 10 j=ip1,n
-        if(p(i).le.p(j)) goto 10
+        if(p(i).le.p(j)) cycle
           temp = p(i)
           p(i) = p(j)
           p(j) = temp
