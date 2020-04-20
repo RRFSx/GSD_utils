@@ -102,9 +102,10 @@ program process_NSSL_mosaic
 !  namelist files
 !
   INTEGER(i_kind)  ::  tversion
+  INTEGER(i_kind)  ::  bkversion
   character*10 :: analysis_time
   CHARACTER*180   dataPath
-  namelist/setup/ tversion,analysis_time,dataPath
+  namelist/setup/ tversion,bkversion,analysis_time,dataPath
   integer(i_kind)  ::  idate
 !
 !
@@ -144,6 +145,7 @@ program process_NSSL_mosaic
 
   if(mype==0) write(*,*) mype, 'deal with mosaic'
 
+  bkversion=0
   open(15, file='mosaic.namelist')
     read(15,setup)
   close(15)
@@ -202,9 +204,14 @@ program process_NSSL_mosaic
 ! set geogrid fle name
 !
   write(geofile,'(a,a)') './', 'geo_em.d01.nc'
+  if(bkversion==1) write(geofile,'(a,a)') './', 'fv3sar_grid_spec.nc'
 
   if(mype==0) write(*,*) 'geofile', trim(geofile)
-  call GET_DIM_ATT_geo(geofile,NLON,NLAT)
+  if(bkversion==1) then
+    call GET_DIM_ATT_fv3sar(geofile,NLON,NLAT)
+  else
+    call GET_DIM_ATT_geo(geofile,NLON,NLAT)
+  endif
   if(mype==0) write(*,*) 'NLON,NLAT',NLON,NLAT
 !
 !  get GSI horizontal grid in latitude and longitude
@@ -213,7 +220,11 @@ program process_NSSL_mosaic
   allocate(ylat(nlon,nlat))
 
   call OPEN_geo(geofile, NCID)
-  call GET_geo_sngl_geo(NCID,Nlon,Nlat,ylat,xlon)
+  if(bkversion==1) then
+     call GET_geo_sngl_fv3sar(NCID,Nlon,Nlat,ylat,xlon)
+  else
+     call GET_geo_sngl_geo(NCID,Nlon,Nlat,ylat,xlon)
+  endif
   call CLOSE_geo(NCID)
 !
   mypeLocal=mype+1
