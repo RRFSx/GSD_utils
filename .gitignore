@@ -7,3 +7,4 @@ bin/
 tmp/
 build
 wrf_inout
+wrfout*
